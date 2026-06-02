@@ -1,0 +1,648 @@
+// =============================================================================
+// mconnect — Complete Prisma Schema
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  VISITOR  // browsing only, cannot book
+  CLIENT   // can book services (upgrade from VISITOR after first booking)
+  MASSEUSE // service provider
+  ADMIN    // platform administrator
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum ProfileStatus {
+  INCOMPLETE   // just registered, no profile yet
+  PENDING      // profile submitted, awaiting admin review
+  APPROVED     // visible in search
+  SUSPENDED    // temporarily hidden by admin
+  BANNED       // permanently banned
+}
+
+enum VerificationLevel {
+  UNVERIFIED
+  EMAIL_VERIFIED
+  PHONE_VERIFIED
+  ID_VERIFIED       // government ID checked
+  FULLY_VERIFIED    // ID + background check passed
+}
+
+enum VerificationDocType {
+  NATIONAL_ID
+  PASSPORT
+  DRIVING_LICENSE
+  CERTIFICATE_OF_GOOD_CONDUCT
+  PROFESSIONAL_CERTIFICATE
+}
+
+enum VerificationDocStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum BookingStatus {
+  PENDING       // created, awaiting payment
+  CONFIRMED     // payment received
+  IN_PROGRESS   // session underway
+  COMPLETED     // session done
+  CANCELLED     // cancelled by client or masseuse
+  NO_SHOW       // client didn't show
+  DISPUTED      // flagged for dispute resolution
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+}
+
+enum PaymentMethod {
+  MPESA
+  CARD_VISA
+  CARD_MASTERCARD
+  BANK_TRANSFER
+  CASH
+}
+
+enum ServiceDurationUnit {
+  MINUTES
+  HOURS
+}
+
+enum ReviewStatus {
+  VISIBLE
+  HIDDEN      // hidden by admin
+  FLAGGED     // flagged by masseuse or system
+  REMOVED     // permanently removed
+}
+
+enum AdminActionType {
+  PROFILE_APPROVED
+  PROFILE_SUSPENDED
+  PROFILE_BANNED
+  PROFILE_REINSTATED
+  REVIEW_HIDDEN
+  REVIEW_REMOVED
+  PAYMENT_REFUNDED
+  BOOKING_CANCELLED
+  USER_SUSPENDED
+  USER_BANNED
+  USER_REINSTATED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  SERVICE_REMOVED
+  WARNING_ISSUED
+  NOTE_ADDED
+}
+
+enum CategoryType {
+  MASSAGE_STYLE    // e.g. Swedish, Deep Tissue
+  SPECIALTY        // e.g. Prenatal, Sports
+  SETTING          // e.g. Home Visit, Spa, Hotel
+  BODY_AREA        // e.g. Full Body, Back & Neck
+}
+
+// =============================================================================
+// 1. COUNTY
+// All 47 counties of Kenya
+// =============================================================================
+
+model County {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique // e.g. "001" for Mombasa
+  slug      String   @unique // e.g. "mombasa"
+  region    String   // Coast, Central, Rift Valley, etc.
+  createdAt DateTime @default(now())
+
+  cities City[]
+
+  @@map("counties")
+}
+
+// =============================================================================
+// 2. CITY / TOWN
+// Major towns and cities within each county
+// =============================================================================
+
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique // e.g. "nairobi-cbd"
+  countyId  Int
+  isCapital Boolean  @default(false) // county capital?
+  isMajor   Boolean  @default(false) // major urban center?
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  createdAt DateTime @default(now())
+
+  county    County            @relation(fields: [countyId], references: [id])
+  profiles  MasseuseProfile[]
+
+  @@unique([name, countyId])
+  @@index([countyId])
+  @@map("cities")
+}
+
+// =============================================================================
+// 3. CATEGORY
+// Service categories — massage styles, specialties, settings, body areas
+// =============================================================================
+
+model Category {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  slug        String       @unique
+  description String?      @db.Text
+  type        CategoryType
+  icon        String?      // lucide icon name or emoji
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  services    Service[]
+  profiles    MasseuseProfileCategory[]
+
+  @@index([type])
+  @@map("categories")
+}
+
+// =============================================================================
+// 4. USER
+// Platform users — clients, masseuses, and admins
+// =============================================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  phone             String?   @unique
+  phoneVerified     DateTime?
+  password          String?   // null for OAuth-only users
+  name              String
+  gender            Gender?
+  dateOfBirth       DateTime?
+  avatarUrl         String?
+  role              Role      @default(VISITOR)
+  isActive          Boolean   @default(true)
+  isBanned          Boolean   @default(false)
+  bannedAt          DateTime?
+  bannedReason      String?   @db.Text
+  lastLoginAt       DateTime?
+  loginCount        Int       @default(0)
+  referralCode      String?   @unique
+  referredById      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // OAuth accounts (NextAuth)
+  accounts          Account[]
+  sessions          Session[]
+
+  // Profile (masseuses only)
+  masseuseProfile   MasseuseProfile?
+
+  // Activity
+  bookingsAsClient  Booking[]           @relation("ClientBookings")
+  reviewsGiven      Review[]            @relation("ClientReviews")
+  adminActions      AdminAction[]       @relation("AdminActor")
+  actionsReceived   AdminAction[]       @relation("ActionTarget")
+
+  // Auth tokens
+  passwordResetTokens    PasswordResetToken[]
+  emailVerifTokens       EmailVerificationToken[]
+
+  // Self-referral
+  referredBy        User?               @relation("Referrals", fields: [referredById], references: [id])
+  referrals         User[]              @relation("Referrals")
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@map("users")
+}
+
+// NextAuth adapter models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// =============================================================================
+// 5. MASSEUSE PROFILE
+// Extended profile for users with role = MASSEUSE
+// =============================================================================
+
+model MasseuseProfile {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  slug            String        @unique  // URL-safe name, e.g. "jane-wanjiku"
+  bio             String        @db.Text
+  tagline         String?       @db.VarChar(160) // short headline
+  cityId          Int
+  address         String?       // general area, not exact (privacy)
+  yearsExperience Int?
+  languages       String[]      @default([])
+  nationality     String?
+  status          ProfileStatus @default(INCOMPLETE)
+  verificationLevel VerificationLevel @default(UNVERIFIED)
+
+  // Media
+  avatarUrl       String?
+  coverPhotoUrl   String?
+
+  // Availability
+  availableMon    Boolean @default(false)
+  availableTue    Boolean @default(false)
+  availableWed    Boolean @default(false)
+  availableThu    Boolean @default(false)
+  availableFri    Boolean @default(false)
+  availableSat    Boolean @default(false)
+  availableSun    Boolean @default(false)
+  availableFrom   String? // "08:00"
+  availableTo     String? // "20:00"
+  mobileService   Boolean @default(false) // travels to client
+  spaService      Boolean @default(false) // has own space
+
+  // Pricing tier (for quick display)
+  minPrice        Decimal? @db.Decimal(10, 2)
+  maxPrice        Decimal? @db.Decimal(10, 2)
+
+  // Aggregated stats (denormalized for performance)
+  avgRating       Float   @default(0)
+  totalReviews    Int     @default(0)
+  totalBookings   Int     @default(0)
+  completionRate  Float   @default(0) // % of bookings completed
+  responseTimeMin Int?    // average response time in minutes
+
+  // SEO / discovery
+  isFeatured      Boolean  @default(false)
+  featuredUntil   DateTime?
+  viewCount       Int      @default(0)
+  profileScore    Float    @default(0) // internal ranking score
+
+  // Timestamps
+  approvedAt      DateTime?
+  lastActiveAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city              City                      @relation(fields: [cityId], references: [id])
+  services          Service[]
+  photos            ProfilePhoto[]
+  verificationDocs  VerificationDocument[]
+  bookings          Booking[]                 @relation("MasseuseBookings")
+  reviews           Review[]                  @relation("MasseuseReviews")
+  categories        MasseuseProfileCategory[]
+
+  @@index([status])
+  @@index([cityId])
+  @@index([avgRating])
+  @@index([isFeatured])
+  @@index([verificationLevel])
+  @@map("masseuse_profiles")
+}
+
+// Many-to-many: MasseuseProfile <-> Category (profile-level specialties)
+model MasseuseProfileCategory {
+  profileId  String
+  categoryId Int
+
+  profile  MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, categoryId])
+  @@map("masseuse_profile_categories")
+}
+
+// =============================================================================
+// 6. PROFILE PHOTO
+// Gallery photos for a masseuse profile
+// =============================================================================
+
+model ProfilePhoto {
+  id          String   @id @default(cuid())
+  profileId   String
+  url         String
+  thumbnailUrl String?
+  altText     String?
+  isCover     Boolean  @default(false)
+  isAvatar    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
+  uploadedAt  DateTime @default(now())
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("profile_photos")
+}
+
+// =============================================================================
+// 7. SERVICE
+// Individual services offered by a masseuse
+// =============================================================================
+
+model Service {
+  id           String  @id @default(cuid())
+  profileId    String
+  categoryId   Int?
+  name         String
+  description  String? @db.Text
+  duration     Int     // numeric value (e.g. 60)
+  durationUnit ServiceDurationUnit @default(MINUTES)
+  price        Decimal @db.Decimal(10, 2) // KES
+  discountPrice Decimal? @db.Decimal(10, 2) // promotional price
+  isActive     Boolean @default(true)
+  maxClientsPerSlot Int @default(1)
+  requiresDeposit   Boolean @default(false)
+  depositAmount     Decimal? @db.Decimal(10, 2)
+  sortOrder    Int     @default(0)
+  bookingCount Int     @default(0) // denormalized
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile   MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category  Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bookings  Booking[]
+
+  @@index([profileId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("services")
+}
+
+// =============================================================================
+// 8. VERIFICATION STATUS / DOCUMENTS
+// Documents submitted for masseuse identity verification
+// =============================================================================
+
+model VerificationDocument {
+  id          String                @id @default(cuid())
+  profileId   String
+  docType     VerificationDocType
+  status      VerificationDocStatus @default(PENDING)
+  fileUrl     String                // Cloudinary URL (private bucket)
+  fileName    String?
+  mimeType    String?
+  notes       String?               @db.Text // admin notes on rejection
+  expiresAt   DateTime?             // for time-limited docs
+  reviewedAt  DateTime?
+  reviewedBy  String?               // admin user ID
+  submittedAt DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([status])
+  @@map("verification_documents")
+}
+
+// =============================================================================
+// 9. BOOKING
+// A client booking a service from a masseuse
+// =============================================================================
+
+model Booking {
+  id           String        @id @default(cuid())
+  bookingRef   String        @unique // human-readable, e.g. MCN-2024-00001
+  clientId     String
+  profileId    String
+  serviceId    String
+  scheduledAt  DateTime
+  endsAt       DateTime      // scheduledAt + service duration
+  status       BookingStatus @default(PENDING)
+  notes        String?       @db.Text
+  clientPhone  String?       // captured at booking time
+  location     String?       // where session will take place
+  totalAmount  Decimal       @db.Decimal(10, 2)
+  depositPaid  Decimal?      @db.Decimal(10, 2)
+  isMobileVisit Boolean      @default(false)
+  cancelledAt  DateTime?
+  cancelledBy  String?       // userId who cancelled
+  cancelReason String?       @db.Text
+  completedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  client   User            @relation("ClientBookings", fields: [clientId], references: [id])
+  profile  MasseuseProfile @relation("MasseuseBookings", fields: [profileId], references: [id])
+  service  Service         @relation(fields: [serviceId], references: [id])
+  payment  Payment?
+  review   Review?
+
+  @@index([clientId])
+  @@index([profileId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("bookings")
+}
+
+// =============================================================================
+// 10. PAYMENT
+// Pesapal transaction record tied to a booking
+// =============================================================================
+
+model Payment {
+  id                   String        @id @default(cuid())
+  bookingId            String        @unique
+  merchantReference    String        @unique // our internal ref, e.g. MCN-PAY-xxx
+  orderTrackingId      String?       @unique // Pesapal's ref (assigned after order submit)
+  confirmationCode     String?       // Pesapal confirmation on success
+  amount               Decimal       @db.Decimal(10, 2)
+  currency             String        @default("KES")
+  method               PaymentMethod?
+  status               PaymentStatus @default(PENDING)
+  mpesaPhone           String?       // M-Pesa number used
+  mpesaReceiptNumber   String?       // M-Pesa receipt
+  cardLast4            String?       // last 4 digits if card
+  cardBrand            String?
+  ipnId                String?       // Pesapal IPN ID used
+  pesapalEnv           String        @default("sandbox") // "sandbox" | "live"
+  failureReason        String?       @db.Text
+  refundedAmount       Decimal?      @db.Decimal(10, 2)
+  refundedAt           DateTime?
+  refundReference      String?
+  metadata             Json?         // raw Pesapal response payload
+  paidAt               DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([merchantReference])
+  @@index([orderTrackingId])
+  @@map("payments")
+}
+
+// =============================================================================
+// 11. REVIEW
+// Post-session review left by a client
+// =============================================================================
+
+model Review {
+  id          String       @id @default(cuid())
+  bookingId   String       @unique
+  clientId    String
+  profileId   String
+  // Star ratings (1–5 each)
+  ratingOverall      Int   // overall
+  ratingCleanliness  Int?  // environment/hygiene
+  ratingTechnique    Int?  // massage technique
+  ratingPunctuality  Int?  // on time
+  ratingCommunication Int? // communication / professionalism
+  // Written feedback
+  title       String?      @db.VarChar(200)
+  comment     String?      @db.Text
+  // Moderation
+  status      ReviewStatus @default(VISIBLE)
+  flaggedAt   DateTime?
+  flagReason  String?      @db.Text
+  hiddenAt    DateTime?
+  hiddenBy    String?      // admin userId
+  // Meta
+  isVerified  Boolean      @default(true) // came from a real completed booking
+  helpfulCount Int         @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  booking Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  client  User            @relation("ClientReviews", fields: [clientId], references: [id])
+  profile MasseuseProfile @relation("MasseuseReviews", fields: [profileId], references: [id])
+
+  @@index([profileId])
+  @@index([clientId])
+  @@index([status])
+  @@index([ratingOverall])
+  @@map("reviews")
+}
+
+// =============================================================================
+// 12. ADMIN ACTION
+// Audit log of every significant action taken by an admin
+// =============================================================================
+
+model AdminAction {
+  id           String          @id @default(cuid())
+  adminId      String          // the admin user who performed the action
+  targetUserId String?         // affected user (if applicable)
+  actionType   AdminActionType
+  // Polymorphic target — at most one will be set
+  targetProfileId  String?
+  targetBookingId  String?
+  targetPaymentId  String?
+  targetReviewId   String?
+  targetDocId      String?
+  // Details
+  reason       String?         @db.Text
+  notes        String?         @db.Text
+  metadata     Json?           // arbitrary extra data
+  ipAddress    String?
+  userAgent    String?         @db.Text
+  createdAt    DateTime        @default(now())
+
+  admin        User  @relation("AdminActor",  fields: [adminId],      references: [id])
+  targetUser   User? @relation("ActionTarget", fields: [targetUserId], references: [id])
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@map("admin_actions")
+}
+
+// =============================================================================
+// PASSWORD RESET TOKEN
+// Secure, single-use, expiring reset tokens
+// =============================================================================
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique  // SHA-256 hash of the raw token sent in email
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// =============================================================================
+// EMAIL VERIFICATION TOKEN
+// Sent on signup; confirms user owns their email address
+// =============================================================================
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}

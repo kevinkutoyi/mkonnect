@@ -1,0 +1,116 @@
+// app/(main)/search/page.tsx
+import { Suspense } from "react";
+import { SearchFilters } from "@/components/search/SearchFilters";
+import { SearchResults } from "@/components/search/SearchResults";
+import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
+
+interface SearchPageProps {
+  searchParams: {
+    location?: string;
+    service?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    minRating?: string;
+    sort?: string;
+    page?: string;
+  };
+}
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const location = searchParams.location;
+  return {
+    title: location ? `Masseuses in ${location}` : "Browse Masseuses",
+    description: `Find professional massage services${location ? ` in ${location}` : ""} across Kenya.`,
+  };
+}
+
+async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
+  const page = Number(searchParams.page ?? 1);
+  const pageSize = 12;
+
+  const where: any = { status: "APPROVED" };
+
+  if (searchParams.location) {
+    where.location = { slug: searchParams.location };
+  }
+  if (searchParams.minRating) {
+    where.avgRating = { gte: Number(searchParams.minRating) };
+  }
+  if (searchParams.service || searchParams.minPrice || searchParams.maxPrice) {
+    where.services = {
+      some: {
+        isActive: true,
+        ...(searchParams.service && {
+          name: { contains: searchParams.service, mode: "insensitive" },
+        }),
+        ...(searchParams.minPrice || searchParams.maxPrice
+          ? {
+              price: {
+                ...(searchParams.minPrice && { gte: Number(searchParams.minPrice) }),
+                ...(searchParams.maxPrice && { lte: Number(searchParams.maxPrice) }),
+              },
+            }
+          : {}),
+      },
+    };
+  }
+
+  const orderBy: any =
+    searchParams.sort === "newest"
+      ? { createdAt: "desc" }
+      : searchParams.sort === "price_asc"
+      ? { services: { _min: { price: "asc" } } }
+      : { avgRating: "desc" };
+
+  const [masseuses, total] = await Promise.all([
+    prisma.masseuseProfile.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        user: { select: { name: true } },
+        location: true,
+        services: { where: { isActive: true }, orderBy: { price: "asc" }, take: 3 },
+        photos: { where: { isCover: true }, take: 1 },
+      },
+    }),
+    prisma.masseuseProfile.count({ where }),
+  ]);
+
+  return { masseuses, total, page, pageSize };
+}
+
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const locations = await prisma.location.findMany({ orderBy: { town: "asc" } });
+  const { masseuses, total, page, pageSize } = await getMasseuses(searchParams);
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="mb-6 text-2xl font-bold">
+        {searchParams.location
+          ? `Masseuses in ${searchParams.location}`
+          : "Browse Masseuses"}
+        {total > 0 && (
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            ({total} found)
+          </span>
+        )}
+      </h1>
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <aside className="w-full lg:w-64 lg:shrink-0">
+          <SearchFilters locations={locations} />
+        </aside>
+        <Suspense fallback={<div>Loading results…</div>}>
+          <SearchResults
+            masseuses={masseuses}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+}

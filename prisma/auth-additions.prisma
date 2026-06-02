@@ -1,0 +1,41 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD THESE MODELS TO YOUR EXISTING schema.prisma
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Password reset tokens (one active token per user at a time)
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique  // SHA-256 hash of the raw token
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// Email verification tokens
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD THESE RELATION FIELDS TO THE User model
+// ─────────────────────────────────────────────────────────────────────────────
+
+// passwordResetTokens  PasswordResetToken[]
+// emailVerifTokens     EmailVerificationToken[]
