@@ -1,16 +1,17 @@
 "use client";
 // components/search/SearchFilters.tsx
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
-import type { Location } from "@prisma/client";
+import { useCallback, useState, useEffect } from "react";
+import { LocationSearch } from "@/components/location/LocationSearch";
+import { NearbyFilter } from "@/components/location/NearbyFilter";
 
-interface Props {
-  locations: Location[];
-}
-
-export function SearchFilters({ locations }: Props) {
+export function SearchFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Track the active city for NearbyFilter
+  const [activeCityId,   setActiveCityId]   = useState<number | undefined>();
+  const [activeCityName, setActiveCityName] = useState<string | undefined>();
 
   const updateFilter = useCallback(
     (key: string, value: string) => {
@@ -24,33 +25,55 @@ export function SearchFilters({ locations }: Props) {
   );
 
   return (
-    <div className="space-y-6 rounded-xl border bg-card p-4">
-      <h2 className="font-semibold">Filters</h2>
+    <div className="space-y-4">
+      {/* Location search */}
+      <div className="rounded-xl border bg-card p-4 space-y-3">
+        <h3 className="font-semibold text-sm">Location</h3>
 
-      {/* Location */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Location
-        </label>
-        <select
-          value={searchParams.get("location") ?? ""}
-          onChange={(e) => updateFilter("location", e.target.value)}
-          className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">All locations</option>
-          {locations.map((loc) => (
-            <option key={loc.id} value={loc.slug}>
-              {loc.town}
-            </option>
-          ))}
-        </select>
+        <LocationSearch
+          placeholder="Search town or city…"
+          defaultValue={searchParams.get("city") ?? ""}
+          onSelect={(city) => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("county", city.county.slug);
+            params.set("city",   city.slug);
+            params.delete("page");
+            router.push(`/search?${params.toString()}`);
+            setActiveCityId(city.id);
+            setActiveCityName(`${city.name}, ${city.county.name}`);
+          }}
+        />
+
+        {/* Active location badge */}
+        {searchParams.get("county") && (
+          <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2 text-sm">
+            <span className="font-medium text-primary capitalize">
+              {(searchParams.get("city") ?? searchParams.get("county") ?? "").replace(/-/g, " ")}
+            </span>
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.delete("county"); params.delete("city"); params.delete("radius");
+                router.push(`/search?${params.toString()}`);
+                setActiveCityId(undefined);
+              }}
+              className="text-xs text-muted-foreground hover:text-destructive"
+            >
+              Clear ×
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Min Rating */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Minimum Rating
-        </label>
+      {/* Nearby filter */}
+      <NearbyFilter
+        currentCityId={activeCityId}
+        currentCityName={activeCityName}
+      />
+
+      {/* Rating */}
+      <div className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="font-semibold text-sm">Minimum Rating</h3>
         <select
           value={searchParams.get("minRating") ?? ""}
           onChange={(e) => updateFilter("minRating", e.target.value)}
@@ -59,15 +82,13 @@ export function SearchFilters({ locations }: Props) {
           <option value="">Any rating</option>
           <option value="4">4+ stars</option>
           <option value="4.5">4.5+ stars</option>
-          <option value="5">5 stars</option>
+          <option value="5">5 stars only</option>
         </select>
       </div>
 
       {/* Price range */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Price Range (KES)
-        </label>
+      <div className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="font-semibold text-sm">Price Range (KES)</h3>
         <div className="flex gap-2">
           <input
             type="number"
@@ -87,10 +108,8 @@ export function SearchFilters({ locations }: Props) {
       </div>
 
       {/* Sort */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Sort By
-        </label>
+      <div className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="font-semibold text-sm">Sort By</h3>
         <select
           value={searchParams.get("sort") ?? "rating"}
           onChange={(e) => updateFilter("sort", e.target.value)}
@@ -107,7 +126,7 @@ export function SearchFilters({ locations }: Props) {
         onClick={() => router.push("/search")}
         className="w-full rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
       >
-        Clear Filters
+        Clear All Filters
       </button>
     </div>
   );

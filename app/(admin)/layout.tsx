@@ -2,13 +2,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, CheckSquare, CreditCard, MapPin } from "lucide-react";
+import { LayoutDashboard, Users, CheckSquare, CreditCard, MapPin, Tag } from "lucide-react";
 
 const navItems = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/masseuses", label: "Masseuses", icon: CheckSquare },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin",          label: "Overview",    icon: LayoutDashboard },
+  { href: "/admin/masseuses",label: "Masseuses",   icon: CheckSquare     },
+  { href: "/admin/users",    label: "Users",       icon: Users           },
+  { href: "/admin/tiers",    label: "Tiers",       icon: Tag             },
+  { href: "/admin/payments", label: "Payments",    icon: CreditCard      },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

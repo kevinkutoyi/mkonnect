@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { SearchResults } from "@/components/search/SearchResults";
 import { prisma } from "@/lib/prisma";
+import { tierOrderBy } from "@/lib/tier-sort";
+import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import type { Metadata } from "next";
 
 interface SearchPageProps {
@@ -29,7 +31,8 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
   const page = Number(searchParams.page ?? 1);
   const pageSize = 12;
 
-  const where: any = { status: "APPROVED" };
+  // Both admin-approved AND payment confirmed are required for public listing
+  const where: any = { ...PUBLIC_PROFILE_FILTER };
 
   if (searchParams.location) {
     where.location = { slug: searchParams.location };
@@ -56,12 +59,14 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
     };
   }
 
-  const orderBy: any =
+  // Tier-boosted sort: VVIP → PREMIUM → VIP → REGULAR, then by chosen sort
+  const baseOrderBy: any =
     searchParams.sort === "newest"
       ? { createdAt: "desc" }
       : searchParams.sort === "price_asc"
       ? { services: { _min: { price: "asc" } } }
       : { avgRating: "desc" };
+  const orderBy = tierOrderBy(baseOrderBy);
 
   const [masseuses, total] = await Promise.all([
     prisma.masseuseProfile.findMany({
@@ -70,11 +75,12 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        user: { select: { name: true } },
+        user:     { select: { name: true } },
         location: true,
         services: { where: { isActive: true }, orderBy: { price: "asc" }, take: 3 },
-        photos: { where: { isCover: true }, take: 1 },
+        photos:   { where: { isCover: true }, take: 1 },
       },
+      // activeTierName is a scalar field, returned automatically
     }),
     prisma.masseuseProfile.count({ where }),
   ]);

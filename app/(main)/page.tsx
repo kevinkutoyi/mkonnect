@@ -3,17 +3,20 @@ import { Hero } from "@/components/home/Hero";
 import { FeaturedMasseuses } from "@/components/home/FeaturedMasseuses";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { prisma } from "@/lib/prisma";
+import { tierOrderBy } from "@/lib/tier-sort";
+import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 
 export default async function HomePage() {
+  // Only APPROVED + payment-confirmed profiles appear on homepage
   const featured = await prisma.masseuseProfile.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { avgRating: "desc" },
+    where: { ...PUBLIC_PROFILE_FILTER },
+    orderBy: tierOrderBy({ avgRating: "desc" }),
     take: 6,
     include: {
-      user: { select: { name: true } },
+      user:     { select: { name: true } },
       location: true,
       services: { where: { isActive: true }, take: 3 },
-      photos: { where: { isCover: true }, take: 1 },
+      photos:   { where: { isCover: true }, take: 1 },
     },
   });
 

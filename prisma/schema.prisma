@@ -22,6 +22,21 @@ enum Role {
   ADMIN    // platform administrator
 }
 
+enum TierName {
+  REGULAR  // base listing — lowest fee
+  VIP      // enhanced visibility
+  PREMIUM  // top placement
+  VVIP     // maximum exposure, all features
+}
+
+enum SubscriptionStatus {
+  PENDING   // payment initiated, not yet confirmed
+  ACTIVE    // paid and within validity period
+  EXPIRED   // validity period passed
+  CANCELLED // manually cancelled
+  FAILED    // payment failed
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -332,6 +347,11 @@ model MasseuseProfile {
   viewCount       Int      @default(0)
   profileScore    Float    @default(0) // internal ranking score
 
+  // Payment-gated public visibility
+  // true only when: status=APPROVED AND an ACTIVE ProfileSubscription exists
+  // Set by: subscription activation callback, expiry cron, admin override
+  listingActive   Boolean  @default(false)
+
   // Timestamps
   approvedAt      DateTime?
   lastActiveAt    DateTime?
@@ -339,6 +359,10 @@ model MasseuseProfile {
   updatedAt       DateTime  @updatedAt
 
   // Relations
+  // Active listing tier (denormalized for fast queries — updated by subscription webhook)
+  activeTierId    Int?
+  activeTierName  TierName?
+
   user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   city              City                      @relation(fields: [cityId], references: [id])
   services          Service[]
@@ -347,10 +371,14 @@ model MasseuseProfile {
   bookings          Booking[]                 @relation("MasseuseBookings")
   reviews           Review[]                  @relation("MasseuseReviews")
   categories        MasseuseProfileCategory[]
+  subscriptions     ProfileSubscription[]
 
   @@index([status])
+  @@index([listingActive])
+  @@index([status, listingActive])   // composite — used by every public query
   @@index([cityId])
   @@index([avgRating])
+  @@index([profileScore])            // used by tier-boosted sort
   @@index([isFeatured])
   @@index([verificationLevel])
   @@map("masseuse_profiles")
@@ -407,13 +435,18 @@ model Service {
   duration     Int     // numeric value (e.g. 60)
   durationUnit ServiceDurationUnit @default(MINUTES)
   price        Decimal @db.Decimal(10, 2) // KES
-  discountPrice Decimal? @db.Decimal(10, 2) // promotional price
-  isActive     Boolean @default(true)
-  maxClientsPerSlot Int @default(1)
-  requiresDeposit   Boolean @default(false)
-  depositAmount     Decimal? @db.Decimal(10, 2)
-  sortOrder    Int     @default(0)
-  bookingCount Int     @default(0) // denormalized
+  discountPrice    Decimal? @db.Decimal(10, 2) // promotional price
+  // Delivery modes
+  homeService      Boolean  @default(false) // masseuse travels to client home
+  hotelVisit       Boolean  @default(false) // masseuse travels to hotel/Airbnb
+  studioService    Boolean  @default(false) // client visits masseuse studio
+  studioLocation   Json?    // { buildingName, floor, street, area, directions, googleMapsUrl }
+  isActive         Boolean  @default(true)
+  maxClientsPerSlot Int     @default(1)
+  requiresDeposit  Boolean  @default(false)
+  depositAmount    Decimal? @db.Decimal(10, 2)
+  sortOrder        Int      @default(0)
+  bookingCount     Int      @default(0) // denormalized
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -646,3 +679,65 @@ model EmailVerificationToken {
   @@index([userId])
   @@map("email_verification_tokens")
 }
+
+// =============================================================================
+// LISTING TIER
+// Admin-managed tier definitions — prices and perks editable from dashboard
+// =============================================================================
+
+model ListingTier {
+  id            Int      @id @default(autoincrement())
+  name          TierName @unique
+  displayName   String   // "Regular", "VIP", "Premium", "VVIP"
+  price         Decimal  @db.Decimal(10, 2)  // KES per period
+  durationDays  Int      // validity in days (e.g. 30, 90)
+  sortOrder     Int      @default(0)         // display order (0=Regular, 3=VVIP)
+  badge         String?                      // emoji or icon key e.g. "⭐", "💎"
+  color         String?                      // tailwind color token e.g. "amber"
+  description   String?  @db.Text
+  perks         Json     // string[] — bullet list of features shown on card
+  isActive      Boolean  @default(true)
+  // Boost settings (used in search ranking)
+  searchBoost   Int      @default(0)  // added to ranking score (0=none, 10=VIP, 25=Premium, 50=VVIP)
+  featuredSlots Int      @default(0)  // how many featured-homepage slots this tier gets
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions ProfileSubscription[]
+
+  @@map("listing_tiers")
+}
+
+// =============================================================================
+// PROFILE SUBSCRIPTION
+// Tracks which tier a masseuse has paid for, and its validity window
+// =============================================================================
+
+model ProfileSubscription {
+  id                  String             @id @default(cuid())
+  profileId           String
+  tierId              Int
+  status              SubscriptionStatus @default(PENDING)
+  startsAt            DateTime?
+  expiresAt           DateTime?
+  autoRenew           Boolean            @default(false)
+  // Payment linkage
+  merchantReference   String             @unique
+  orderTrackingId     String?            @unique
+  amountPaid          Decimal?           @db.Decimal(10, 2)
+  paidAt              DateTime?
+  // Admin overrides
+  grantedByAdmin      Boolean            @default(false)
+  grantedReason       String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  tier    ListingTier     @relation(fields: [tierId],   references: [id])
+
+  @@index([profileId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("profile_subscriptions")
+}
+

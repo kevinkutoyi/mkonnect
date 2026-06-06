@@ -13,7 +13,7 @@ export function FeaturedMasseuses({ masseuses }: Props) {
     <section className="py-16">
       <div className="container mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Top Rated Masseuses</h2>
+          <h2 className="text-2xl font-bold">Featured Masseuses</h2>
           <Link
             href="/search"
             className="text-sm font-medium text-primary hover:underline"

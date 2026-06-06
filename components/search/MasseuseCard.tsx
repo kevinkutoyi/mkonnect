@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Star, Clock } from "lucide-react";
 import { formatKES, formatDuration, getInitials } from "@/lib/utils";
+import { TierBadge } from "@/components/tiers/TierBadge";
+import type { TierName } from "@prisma/client";
 
 interface Props {
   masseuse: any;
@@ -34,6 +36,12 @@ export function MasseuseCard({ masseuse }: Props) {
             <span className="text-4xl font-bold text-muted-foreground">
               {getInitials(masseuse.user.name)}
             </span>
+          </div>
+        )}
+        {/* Tier badge — top left */}
+        {masseuse.activeTierName && masseuse.activeTierName !== "REGULAR" && (
+          <div className="absolute left-3 top-3">
+            <TierBadge tier={masseuse.activeTierName as TierName} size="sm" />
           </div>
         )}
         {/* Rating badge */}
