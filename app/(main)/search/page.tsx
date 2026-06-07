@@ -35,7 +35,7 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
   const where: any = { ...PUBLIC_PROFILE_FILTER };
 
   if (searchParams.location) {
-    where.location = { slug: searchParams.location };
+    where.city = { slug: searchParams.location };
   }
   if (searchParams.minRating) {
     where.avgRating = { gte: Number(searchParams.minRating) };
@@ -76,7 +76,7 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
       take: pageSize,
       include: {
         user:     { select: { name: true } },
-        location: true,
+        city:     true,
         services: { where: { isActive: true }, orderBy: { price: "asc" }, take: 3 },
         photos:   { where: { isCover: true }, take: 1 },
       },
@@ -89,12 +89,11 @@ async function getMasseuses(searchParams: SearchPageProps["searchParams"]) {
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const locations = await prisma.location.findMany({ orderBy: { town: "asc" } });
   const { masseuses, total, page, pageSize } = await getMasseuses(searchParams);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">
+    <div className="mx-auto max-w-7xl px-6 py-8">
+      <h1 className="text-2xl font-bold mb-6">
         {searchParams.location
           ? `Masseuses in ${searchParams.location}`
           : "Browse Masseuses"}
@@ -104,18 +103,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </span>
         )}
       </h1>
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="w-full lg:w-64 lg:shrink-0">
-          <SearchFilters locations={locations} />
+      <div className="flex gap-6 items-start">
+        <aside className="w-64 shrink-0">
+          <SearchFilters />
         </aside>
-        <Suspense fallback={<div>Loading results…</div>}>
-          <SearchResults
-            masseuses={masseuses}
-            total={total}
-            page={page}
-            pageSize={pageSize}
-          />
-        </Suspense>
+        <div className="flex-1 min-w-0">
+          <Suspense fallback={<div>Loading results…</div>}>
+            <SearchResults
+              masseuses={masseuses}
+              total={total}
+              page={page}
+              pageSize={pageSize}
+            />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

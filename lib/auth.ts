@@ -45,10 +45,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
 
   pages: {
-    signIn: "/auth/login",
-    error: "/auth/login",
-    verifyRequest: "/auth/verify-request",
-    newUser: "/auth/welcome",
+    signIn: "/login",
+    error: "/login",
   },
 
   providers: [
@@ -219,7 +217,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
  */
 export async function requireRole(
   allowedRoles: Role[],
-  redirectTo = "/auth/login"
+  redirectTo = "/login"
 ): Promise<NonNullable<Awaited<ReturnType<typeof auth>>>> {
   const { redirect } = await import("next/navigation");
   const session = await auth();

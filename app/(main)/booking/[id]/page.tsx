@@ -20,17 +20,19 @@ export default async function BookingPage({ params }: Props) {
     include: {
       user: { select: { name: true } },
       services: { where: { isActive: true }, orderBy: { price: "asc" } },
-      location: true,
+      city: { include: { county: true } },
     },
   });
 
   if (!profile) notFound();
 
+  const locationStr = [profile.city?.name, profile.city?.county?.name].filter(Boolean).join(", ");
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-12">
       <h1 className="mb-2 text-2xl font-bold">Book with {profile.user.name}</h1>
       <p className="mb-8 text-muted-foreground">
-        {profile.location.town}, {profile.location.county}
+        {locationStr}
       </p>
       <BookingForm profile={profile} clientId={session.user.id} />
     </div>

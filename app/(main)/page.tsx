@@ -14,13 +14,16 @@ export default async function HomePage() {
     take: 6,
     include: {
       user:     { select: { name: true } },
-      location: true,
+      city:     true,
       services: { where: { isActive: true }, take: 3 },
       photos:   { where: { isCover: true }, take: 1 },
     },
   });
 
-  const locations = await prisma.location.findMany({ orderBy: { town: "asc" } });
+  const locations = await prisma.city.findMany({
+    select: { id: true, slug: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <>

@@ -6,25 +6,24 @@ import { createSlug } from "@/lib/utils";
 import { z } from "zod";
 
 const CreateProfileSchema = z.object({
-  bio: z.string().min(50).max(1000),
-  locationId: z.string(),
-  address: z.string().optional(),
-  yearsExp: z.number().int().min(0).max(50).optional(),
-  languages: z.array(z.string()).optional(),
-  availability: z.record(z.boolean()).optional(),
+  bio:            z.string().min(50).max(1000),
+  cityId:         z.number().int(),
+  address:        z.string().optional(),
+  yearsExperience: z.number().int().min(0).max(50).optional(),
+  languages:      z.array(z.string()).optional(),
 });
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const page = Number(searchParams.get("page") ?? 1);
+  const page     = Number(searchParams.get("page") ?? 1);
   const pageSize = 12;
 
-  const where: any = { status: "APPROVED" };
-  const location = searchParams.get("location");
-  const service = searchParams.get("service");
+  const where: any = { status: "APPROVED", listingActive: true };
+  const location  = searchParams.get("location");
+  const service   = searchParams.get("service");
   const minRating = searchParams.get("minRating");
 
-  if (location) where.location = { slug: location };
+  if (location) where.city    = { slug: location };
   if (minRating) where.avgRating = { gte: Number(minRating) };
   if (service) {
     where.services = { some: { isActive: true, name: { contains: service, mode: "insensitive" } } };
@@ -33,14 +32,14 @@ export async function GET(req: NextRequest) {
   const [data, total] = await Promise.all([
     prisma.masseuseProfile.findMany({
       where,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip:    (page - 1) * pageSize,
+      take:    pageSize,
       orderBy: { avgRating: "desc" },
       include: {
-        user: { select: { name: true } },
-        location: true,
+        user:     { select: { name: true } },
+        city:     { include: { county: true } },
         services: { where: { isActive: true }, take: 3 },
-        photos: { where: { isCover: true }, take: 1 },
+        photos:   { where: { isCover: true }, take: 1 },
       },
     }),
     prisma.masseuseProfile.count({ where }),
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
   }
 
-  const body = await req.json();
+  const body   = await req.json();
   const parsed = CreateProfileSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -73,16 +72,15 @@ export async function POST(req: NextRequest) {
 
   const profile = await prisma.masseuseProfile.create({
     data: {
-      userId: session.user.id,
+      userId:          session.user.id,
       slug,
-      bio: parsed.data.bio,
-      locationId: parsed.data.locationId,
-      address: parsed.data.address,
-      yearsExp: parsed.data.yearsExp,
-      languages: parsed.data.languages ?? [],
-      availability: parsed.data.availability,
+      bio:             parsed.data.bio,
+      cityId:          parsed.data.cityId,
+      address:         parsed.data.address,
+      yearsExperience: parsed.data.yearsExperience,
+      languages:       parsed.data.languages ?? [],
     },
-    include: { location: true },
+    include: { city: { include: { county: true } } },
   });
 
   return NextResponse.json(profile, { status: 201 });

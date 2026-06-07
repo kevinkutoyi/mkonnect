@@ -129,9 +129,9 @@ async function main() {
       continue;
     }
     await prisma.city.upsert({
-      where: { slug: city.slug },
+      where: { name_countyId: { name: city.name, countyId } },
       update: {
-        name: city.name, countyId,
+        slug: city.slug,
         isCapital: city.isCapital, isMajor: city.isMajor,
         latitude: city.lat, longitude: city.lng,
       },

@@ -10,16 +10,15 @@ export interface MasseuseWithDetails {
   avatarUrl: string | null;
   avgRating: number;
   totalReviews: number;
-  yearsExp: number | null;
+  yearsExperience: number | null;
   languages: string[];
-  availability: Record<string, boolean> | null;
   status: ProfileStatus;
-  location: {
-    id: string;
-    town: string;
-    county: string;
+  city: {
+    id: number;
+    name: string;
     slug: string;
-  };
+    county: { name: string };
+  } | null;
   user: {
     id: string;
     name: string;

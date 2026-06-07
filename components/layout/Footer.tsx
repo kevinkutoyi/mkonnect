@@ -4,36 +4,58 @@ import { MapPin } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t bg-muted/40 py-10">
-      <div className="container mx-auto px-4">
-        <div className="grid gap-8 sm:grid-cols-3">
+    <footer className="border-t bg-muted/40 pt-10 pb-6">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Brand */}
           <div>
-            <Link href="/" className="flex items-center gap-1.5 font-bold text-lg mb-3">
+            <Link href="/" className="inline-flex items-center gap-1.5 font-bold text-lg mb-3">
               <MapPin className="h-4 w-4 text-primary" />
               m<span className="text-primary">connect</span>
             </Link>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Kenya's platform for professional massage services.
             </p>
           </div>
+
+          {/* For Clients */}
           <div>
-            <h3 className="mb-3 font-semibold text-sm">For Clients</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/search" className="hover:text-foreground">Find a Masseuse</Link></li>
-              <li><Link href="/search?location=nairobi" className="hover:text-foreground">Nairobi</Link></li>
-              <li><Link href="/search?location=mombasa" className="hover:text-foreground">Mombasa</Link></li>
-              <li><Link href="/search?location=kisumu" className="hover:text-foreground">Kisumu</Link></li>
+            <h3 className="font-semibold text-sm mb-3">For Clients</h3>
+            <ul className="space-y-2">
+              {[
+                { label: "Find a Masseuse", href: "/search" },
+                { label: "Nairobi",         href: "/search?location=nairobi" },
+                { label: "Mombasa",         href: "/search?location=mombasa" },
+                { label: "Kisumu",          href: "/search?location=kisumu" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* For Masseuses */}
           <div>
-            <h3 className="mb-3 font-semibold text-sm">For Masseuses</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/register" className="hover:text-foreground">Join mconnect</Link></li>
-              <li><Link href="/dashboard" className="hover:text-foreground">Dashboard</Link></li>
+            <h3 className="font-semibold text-sm mb-3">For Masseuses</h3>
+            <ul className="space-y-2">
+              {[
+                { label: "Join mconnect", href: "/register" },
+                { label: "Dashboard",    href: "/dashboard" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
-        <div className="mt-8 border-t pt-6 text-center text-xs text-muted-foreground">
+
+        <div className="mt-8 pt-5 border-t text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} mconnect. All rights reserved.
         </div>
       </div>

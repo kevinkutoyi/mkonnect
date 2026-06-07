@@ -55,6 +55,15 @@ const config: Config = {
       },
     },
   },
+  safelist: [
+    "md:flex",
+    "md:hidden",
+    "sm:grid-cols-3",
+    "lg:grid-cols-3",
+    "lg:grid-cols-4",
+    "sm:flex-row",
+    "md:grid-cols-2",
+  ],
   plugins: [require("tailwindcss-animate")],
 };
 
