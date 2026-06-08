@@ -62,6 +62,56 @@ function ReasonModal({
   );
 }
 
+
+// ── Verification level control ────────────────────────────────────────────────
+const VERIFY_LEVELS = [
+  { value: "UNVERIFIED",     label: "Unverified" },
+  { value: "EMAIL_VERIFIED", label: "Email verified" },
+  { value: "PHONE_VERIFIED", label: "Phone verified" },
+  { value: "ID_VERIFIED",    label: "ID verified" },
+  { value: "FULLY_VERIFIED", label: "Fully verified" },
+];
+
+function VerifyControl({ profileId, current, onDone }: {
+  profileId: string; current: string; onDone: () => void;
+}) {
+  const [level,   setLevel]   = useState(current);
+  const [saving,  setSaving]  = useState(false);
+
+  const save = async () => {
+    if (level === current) return;
+    setSaving(true);
+    await fetch(`/api/admin/profiles/${profileId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ verificationLevel: level }),
+    });
+    setSaving(false);
+    onDone();
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        value={level}
+        onChange={(e) => setLevel(e.target.value)}
+        className="rounded-lg border bg-card px-2 py-1.5 text-xs font-medium outline-none focus:border-primary"
+      >
+        {VERIFY_LEVELS.map((l) => (
+          <option key={l.value} value={l.value}>{l.label}</option>
+        ))}
+      </select>
+      <button
+        onClick={save}
+        disabled={saving || level === current}
+        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-40 hover:bg-primary/90"
+      >
+        {saving ? "Saving…" : "Save"}
+      </button>
+    </div>
+  );
+}
+
 // ── Profile card ──────────────────────────────────────────────────────────────
 function ProfileCard({
   profile,
@@ -134,6 +184,18 @@ function ProfileCard({
             <p className="line-clamp-2 text-xs text-muted-foreground">{profile.bio}</p>
           </div>
         )}
+
+        {/* Verification level */}
+        <div className="border-t px-5 py-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Verification Level
+          </p>
+          <VerifyControl
+            profileId={profile.id}
+            current={profile.verificationLevel ?? "UNVERIFIED"}
+            onDone={() => onAction(profile.id, "__refresh__")}
+          />
+        </div>
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 border-t bg-muted/20 px-5 py-3">

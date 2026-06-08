@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Star, Home, Clock } from "lucide-react";
 import { formatKES, formatDuration, getInitials } from "@/lib/utils";
-import { TierBadge } from "@/components/tiers/TierBadge";
+import { TierBadge }       from "@/components/tiers/TierBadge";
+import { TrustBadgeIcons } from "@/components/trust/TrustBadges";
 import type { TierName } from "@prisma/client";
 
 interface Props {
@@ -94,7 +95,7 @@ export function MasseuseCard({ masseuse }: Props) {
           </div>
         )}
 
-        {/* Bottom overlay: name + location */}
+        {/* Bottom overlay: name + location + trust icons */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <p className="text-base font-bold text-white leading-tight drop-shadow">
             {masseuse.user.name}
@@ -106,6 +107,12 @@ export function MasseuseCard({ masseuse }: Props) {
               {masseuse.city.county ? `, ${masseuse.city.county.name}` : ""}
             </div>
           )}
+          <div className="mt-1.5">
+            <TrustBadgeIcons
+              verificationLevel={masseuse.verificationLevel ?? "UNVERIFIED"}
+              listingActive={masseuse.listingActive ?? false}
+            />
+          </div>
         </div>
       </Link>
 

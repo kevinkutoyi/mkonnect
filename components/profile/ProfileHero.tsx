@@ -1,8 +1,9 @@
 // components/profile/ProfileHero.tsx
 import Image from "next/image";
-import { MapPin, BadgeCheck, Star } from "lucide-react";
-import { getInitials } from "@/lib/utils";
-import { TierBadge } from "@/components/tiers/TierBadge";
+import { MapPin, Star } from "lucide-react";
+import { getInitials }  from "@/lib/utils";
+import { TierBadge }    from "@/components/tiers/TierBadge";
+import { TrustBadges }  from "@/components/trust/TrustBadges";
 import type { TierName } from "@prisma/client";
 
 const CATEGORY_COLOURS = [
@@ -14,8 +15,8 @@ const CATEGORY_COLOURS = [
 ];
 
 export function ProfileHero({ profile }: { profile: any }) {
-  const cover  = profile.photos?.[0];
-  const cats   = profile.categories?.map((c: any) => c.category ?? c) ?? [];
+  const cover = profile.photos?.[0];
+  const cats  = profile.categories?.map((c: any) => c.category ?? c) ?? [];
 
   return (
     <div className="relative">
@@ -34,7 +35,7 @@ export function ProfileHero({ profile }: { profile: any }) {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 
-      {/* Profile info row — overlaps cover */}
+      {/* Profile info row */}
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="relative -mt-16 flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
           {/* Avatar */}
@@ -62,9 +63,6 @@ export function ProfileHero({ profile }: { profile: any }) {
               <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
                 {profile.user.name}
               </h1>
-              {profile.verificationLevel !== "UNVERIFIED" && (
-                <BadgeCheck className="h-6 w-6 text-primary" aria-label="Verified" />
-              )}
               {profile.activeTierName && profile.activeTierName !== "REGULAR" && (
                 <TierBadge tier={profile.activeTierName as TierName} size="sm" />
               )}
@@ -73,6 +71,16 @@ export function ProfileHero({ profile }: { profile: any }) {
             {profile.tagline && (
               <p className="mt-1 text-base text-muted-foreground italic">"{profile.tagline}"</p>
             )}
+
+            {/* Trust badges — prominent row */}
+            <div className="mt-2">
+              <TrustBadges
+                verificationLevel={profile.verificationLevel}
+                listingActive={profile.listingActive}
+                size="md"
+                showLabels
+              />
+            </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               {profile.city && (
@@ -98,7 +106,7 @@ export function ProfileHero({ profile }: { profile: any }) {
               )}
             </div>
 
-            {/* Category badges */}
+            {/* Category pills */}
             {cats.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {cats.map((cat: any, i: number) => (
