@@ -8,6 +8,7 @@ import { ProfileBio }      from "@/components/profile/ProfileBio";
 import { ServicesList }    from "@/components/profile/ServicesList";
 import { PhotoGallery }    from "@/components/profile/PhotoGallery";
 import { ReviewsList }     from "@/components/profile/ReviewsList";
+import { ReviewForm }      from "@/components/reviews/ReviewForm";
 import { BookingSidebar }  from "@/components/profile/BookingSidebar";
 import { ContactBar }      from "@/components/contact/ContactBar";
 import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
@@ -197,6 +198,10 @@ export default async function MasseuseProfilePage({ params }: Props) {
                 avgRating={profile.avgRating}
                 total={profile.totalReviews}
               />
+              {/* Review form — hide for owners and admins */}
+              {!isOwner && !isAdmin && (
+                <ReviewForm profileId={profile.id} profileName={profile.user.name} />
+              )}
             </div>
 
             {/* Sticky sidebar */}

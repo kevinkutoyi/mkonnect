@@ -580,8 +580,8 @@ model Payment {
 
 model Review {
   id          String       @id @default(cuid())
-  bookingId   String       @unique
-  clientId    String
+  bookingId   String?      @unique
+  clientId    String?
   profileId   String
   // Star ratings (1–5 each)
   ratingOverall      Int   // overall
@@ -592,8 +592,9 @@ model Review {
   // Written feedback
   title       String?      @db.VarChar(200)
   comment     String?      @db.Text
+  isAnonymous Boolean      @default(false)
   // Moderation
-  status      ReviewStatus @default(VISIBLE)
+  status      ReviewStatus @default(HIDDEN)
   flaggedAt   DateTime?
   flagReason  String?      @db.Text
   hiddenAt    DateTime?
@@ -604,8 +605,8 @@ model Review {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  booking Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  client  User            @relation("ClientReviews", fields: [clientId], references: [id])
+  booking Booking?        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  client  User?           @relation("ClientReviews", fields: [clientId], references: [id])
   profile MasseuseProfile @relation("MasseuseReviews", fields: [profileId], references: [id])
 
   @@index([profileId])

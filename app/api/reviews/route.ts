@@ -1,69 +1,57 @@
 // app/api/reviews/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+import { NextResponse } from "next/server";
+import { z }            from "zod";
+import { auth }         from "@/lib/auth";
+import { prisma }       from "@/lib/prisma";
 
-const ReviewSchema = z.object({
-  bookingId: z.string(),
-  rating: z.number().int().min(1).max(5),
-  comment: z.string().max(1000).optional(),
+const Schema = z.object({
+  profileId:   z.string().min(1),
+  rating:      z.number().int().min(1).max(5),
+  comment:     z.string().max(2000).optional(),
+  isAnonymous: z.boolean().default(false),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const session = await auth();
-  if (!session || session.user.role !== "CLIENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const body    = await req.json().catch(() => null);
+  const parsed  = Schema.safeParse(body);
 
-  const body = await req.json();
-  const parsed = ReviewSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const booking = await prisma.booking.findUnique({
-    where: {
-      id: parsed.data.bookingId,
-      clientId: session.user.id,
-      status: "COMPLETED",
-    },
+  const { profileId, rating, comment, isAnonymous } = parsed.data;
+
+  // Verify profile exists and is public
+  const profile = await prisma.masseuseProfile.findUnique({
+    where:  { id: profileId, status: "APPROVED", listingActive: true },
+    select: { id: true },
   });
-
-  if (!booking) {
-    return NextResponse.json({ error: "Booking not found or not completed" }, { status: 404 });
+  if (!profile) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  const existing = await prisma.review.findUnique({ where: { bookingId: booking.id } });
-  if (existing) {
-    return NextResponse.json({ error: "Review already submitted" }, { status: 409 });
+  // Prevent owners from reviewing themselves
+  if (session?.user) {
+    const own = await prisma.masseuseProfile.findUnique({
+      where:  { id: profileId },
+      select: { userId: true },
+    });
+    if (own?.userId === session.user.id) {
+      return NextResponse.json({ error: "Cannot review your own profile" }, { status: 403 });
+    }
   }
 
-  // Create review + update denormalized avgRating on profile
   const review = await prisma.review.create({
     data: {
-      bookingId: booking.id,
-      clientId: session.user.id,
-      profileId: booking.profileId,
-      rating: parsed.data.rating,
-      comment: parsed.data.comment,
+      profileId,
+      ratingOverall: rating,
+      comment:       comment?.trim() || null,
+      isAnonymous,
+      clientId:      (!isAnonymous && session?.user?.id) ? session.user.id : null,
+      status:        "HIDDEN", // always starts hidden — admin must approve
     },
   });
 
-  // Recalculate avg rating
-  const agg = await prisma.review.aggregate({
-    where: { profileId: booking.profileId },
-    _avg: { rating: true },
-    _count: { rating: true },
-  });
-
-  await prisma.masseuseProfile.update({
-    where: { id: booking.profileId },
-    data: {
-      avgRating: agg._avg.rating ?? 0,
-      totalReviews: agg._count.rating,
-    },
-  });
-
-  return NextResponse.json(review, { status: 201 });
+  return NextResponse.json({ id: review.id }, { status: 201 });
 }
