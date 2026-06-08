@@ -229,6 +229,8 @@ model User {
   bannedAt          DateTime?
   bannedReason      String?   @db.Text
   lastLoginAt       DateTime?
+  isOnline          Boolean   @default(false)
+  lastSeen          DateTime?
   loginCount        Int       @default(0)
   referralCode      String?   @unique
   referredById      String?
@@ -251,6 +253,10 @@ model User {
   // Auth tokens
   passwordResetTokens    PasswordResetToken[]
   emailVerifTokens       EmailVerificationToken[]
+
+  // Contact system
+  conversations     Conversation[]    @relation("ClientConversations")
+  messagesSent      Message[]         @relation("MessageSender")
 
   // Self-referral
   referredBy        User?               @relation("Referrals", fields: [referredById], references: [id])
@@ -372,6 +378,8 @@ model MasseuseProfile {
   reviews           Review[]                  @relation("MasseuseReviews")
   categories        MasseuseProfileCategory[]
   subscriptions     ProfileSubscription[]
+  conversations     Conversation[]
+  contactEvents     ContactEvent[]
 
   @@index([status])
   @@index([listingActive])
@@ -741,3 +749,54 @@ model ProfileSubscription {
   @@map("profile_subscriptions")
 }
 
+
+// =============================================================================
+// CONTACT SYSTEM
+// =============================================================================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  clientId  String
+  profileId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client   User            @relation("ClientConversations", fields: [clientId], references: [id], onDelete: Cascade)
+  masseuse MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([clientId, profileId])
+  @@index([clientId])
+  @@index([profileId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String       @db.Text
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model ContactEvent {
+  id        String   @id @default(cuid())
+  type      String   // whatsapp | phone | message | video_call | audio_call
+  profileId String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("contact_events")
+}

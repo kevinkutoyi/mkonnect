@@ -1,15 +1,17 @@
 // app/(main)/masseuse/[slug]/page.tsx
-import { notFound }      from "next/navigation";
-import type { Metadata } from "next";
-import { prisma }        from "@/lib/prisma";
-import { auth }          from "@/lib/auth";
-import { ProfileHero }   from "@/components/profile/ProfileHero";
-import { ProfileBio }    from "@/components/profile/ProfileBio";
-import { ServicesList }  from "@/components/profile/ServicesList";
-import { PhotoGallery }  from "@/components/profile/PhotoGallery";
-import { ReviewsList }   from "@/components/profile/ReviewsList";
-import { BookingSidebar} from "@/components/profile/BookingSidebar";
-import type { TierName } from "@prisma/client";
+import { notFound }        from "next/navigation";
+import type { Metadata }   from "next";
+import { prisma }          from "@/lib/prisma";
+import { auth }            from "@/lib/auth";
+import { ProfileHero }     from "@/components/profile/ProfileHero";
+import { ProfileBio }      from "@/components/profile/ProfileBio";
+import { ServicesList }    from "@/components/profile/ServicesList";
+import { PhotoGallery }    from "@/components/profile/PhotoGallery";
+import { ReviewsList }     from "@/components/profile/ReviewsList";
+import { BookingSidebar }  from "@/components/profile/BookingSidebar";
+import { ContactBar }      from "@/components/contact/ContactBar";
+import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
+import type { TierName }   from "@prisma/client";
 
 interface Props { params: { slug: string } }
 
@@ -17,7 +19,7 @@ async function getMasseuse(slug: string) {
   return prisma.masseuseProfile.findUnique({
     where: { slug },
     include: {
-      user:       { select: { id: true, name: true, phone: true } },
+      user:       { select: { id: true, name: true, phone: true, isOnline: true, lastSeen: true } },
       city:       { include: { county: true } },
       services:   { where: { isActive: true }, orderBy: { price: "asc" } },
       photos:     { orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }] },
@@ -48,13 +50,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   if (!p) return { title: "Not Found" };
 
-  const cityStr     = p.city ? `${p.city.name}, ${p.city.county?.name ?? "Kenya"}` : "Kenya";
-  const serviceStr  = p.services.map((s) => s.name).join(", ");
-  const catStr      = p.categories.map((c) => c.category.name).join(", ");
-  const title       = `${p.user.name} — Professional Masseuse in ${cityStr}`;
+  const cityStr    = p.city ? `${p.city.name}, ${p.city.county?.name ?? "Kenya"}` : "Kenya";
+  const serviceStr = p.services.map((s) => s.name).join(", ");
+  const catStr     = p.categories.map((c) => c.category.name).join(", ");
+  const title      = `${p.user.name} — Professional Masseuse in ${cityStr}`;
   const description = p.tagline
     ?? `${p.user.name} offers ${serviceStr} in ${cityStr}. ${p.bio?.slice(0, 110) ?? ""}`;
-  const keywords    = [
+  const keywords = [
     p.user.name, "masseuse", "massage", cityStr,
     serviceStr, catStr, "Kenya massage", "book massage",
   ].filter(Boolean).join(", ");
@@ -88,17 +90,17 @@ function JsonLd({ profile }: { profile: any }) {
     url:         `${base}/masseuse/${profile.slug}`,
     telephone:   profile.user.phone,
     address: {
-      "@type":           "PostalAddress",
-      addressLocality:   profile.city?.name,
-      addressRegion:     profile.city?.county?.name,
-      addressCountry:    "KE",
+      "@type":         "PostalAddress",
+      addressLocality: profile.city?.name,
+      addressRegion:   profile.city?.county?.name,
+      addressCountry:  "KE",
     },
     aggregateRating: profile.totalReviews > 0 ? {
-      "@type":       "AggregateRating",
-      ratingValue:   profile.avgRating.toFixed(1),
-      reviewCount:   profile.totalReviews,
-      bestRating:    "5",
-      worstRating:   "1",
+      "@type":     "AggregateRating",
+      ratingValue: profile.avgRating.toFixed(1),
+      reviewCount: profile.totalReviews,
+      bestRating:  "5",
+      worstRating: "1",
     } : undefined,
     priceRange: profile.minPrice
       ? `KES ${Number(profile.minPrice).toLocaleString()}–${Number(profile.maxPrice ?? profile.minPrice).toLocaleString()}`
@@ -143,6 +145,9 @@ export default async function MasseuseProfilePage({ params }: Props) {
     <>
       <JsonLd profile={profile} />
 
+      {/* Heartbeat for logged-in users */}
+      {session?.user && <PresenceHeartbeat />}
+
       <div className="min-h-screen bg-background">
         {/* Preview banner */}
         {(isAdmin || isOwner) && !profileVisible && (
@@ -161,8 +166,21 @@ export default async function MasseuseProfilePage({ params }: Props) {
         {/* Hero */}
         <ProfileHero profile={profile} />
 
+        {/* Contact bar — below hero */}
+        <div className="mx-auto max-w-6xl px-4 py-4 md:px-6">
+          <ContactBar
+            profile={{
+              id:       profile.id,
+              user:     { name: profile.user.name, phone: profile.user.phone },
+              avatarUrl: profile.avatarUrl,
+              isOnline: profile.user.isOnline,
+            }}
+            currentUserId={session?.user?.id ?? null}
+          />
+        </div>
+
         {/* Body */}
-        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
+        <div className="mx-auto max-w-6xl px-4 pb-10 md:px-6">
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Left column */}
             <div className="space-y-10 lg:col-span-2">
