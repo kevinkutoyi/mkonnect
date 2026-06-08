@@ -12,6 +12,7 @@ import { ReviewForm }      from "@/components/reviews/ReviewForm";
 import { BookingSidebar }  from "@/components/profile/BookingSidebar";
 import { ContactBar }      from "@/components/contact/ContactBar";
 import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
+import { FavoriteButton }   from "@/components/favorites/FavoriteButton";
 import type { TierName }   from "@prisma/client";
 
 interface Props { params: { slug: string } }
@@ -133,6 +134,12 @@ export default async function MasseuseProfilePage({ params }: Props) {
   const [profile, session] = await Promise.all([getMasseuse(params.slug), auth()]);
   if (!profile) notFound();
 
+  const isFavorited = session?.user
+    ? !!(await prisma.favorite.findUnique({
+        where: { userId_profileId: { userId: session.user.id, profileId: profile.id } },
+      }))
+    : false;
+
   const isAdmin = session?.user?.role === "ADMIN";
   const isOwner = session?.user?.id === profile.user.id;
 
@@ -169,7 +176,13 @@ export default async function MasseuseProfilePage({ params }: Props) {
 
         {/* Contact bar — below hero */}
         <div className="mx-auto max-w-6xl px-4 py-4 md:px-6">
-          <ContactBar
+          <div className="flex items-center gap-3 flex-wrap">
+            <FavoriteButton
+              profileId={profile.id}
+              initialSaved={isFavorited}
+              isLoggedIn={!!session?.user}
+            />
+            <ContactBar
             profile={{
               id:       profile.id,
               user:     { name: profile.user.name, phone: profile.user.phone },
@@ -177,7 +190,8 @@ export default async function MasseuseProfilePage({ params }: Props) {
               isOnline: profile.user.isOnline,
             }}
             currentUserId={session?.user?.id ?? null}
-          />
+            />
+          </div>
         </div>
 
         {/* Body */}
