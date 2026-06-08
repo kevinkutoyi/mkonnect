@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Menu, X, MapPin } from "lucide-react";
 import { getInitials } from "@/lib/utils";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -40,6 +41,7 @@ export function Navbar() {
           <ThemeToggle />
           {session ? (
             <>
+              <NotificationBell />
               <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                 {getInitials(session.user.name)}
               </div>

@@ -188,3 +188,195 @@ export async function sendWelcomeEmail(params: {
     html,
   });
 }
+
+// =============================================================================
+// NOTIFICATION EMAILS
+// =============================================================================
+
+// ─── 5. Payment Confirmed ─────────────────────────────────────────────────────
+export async function sendPaymentConfirmedEmail(params: {
+  to:        string;
+  name:      string;
+  tierName:  string;
+  amount:    number;
+  expiresAt: Date;
+}) {
+  const dashUrl = `${APP_URL}/dashboard/listing`;
+  const expires = params.expiresAt.toLocaleDateString("en-KE", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  const html = emailWrapper(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+      Payment confirmed ✅
+    </h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
+      Hi <strong>${params.name}</strong>, we've received your payment for your
+      <strong>${params.tierName}</strong> listing plan on ${APP_NAME}.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size:13px;color:#64748b;padding-bottom:8px;">Amount paid</td>
+              <td style="font-size:13px;font-weight:700;color:#0f172a;text-align:right;padding-bottom:8px;">
+                KES ${params.amount.toLocaleString()}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:13px;color:#64748b;padding-bottom:8px;">Plan</td>
+              <td style="font-size:13px;font-weight:700;color:#0f172a;text-align:right;padding-bottom:8px;">
+                ${params.tierName}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:13px;color:#64748b;">Valid until</td>
+              <td style="font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
+                ${expires}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 4px;font-size:15px;color:#475569;line-height:1.6;">
+      Your listing is now <strong>active</strong> and visible to clients across Kenya.
+    </p>
+    ${emailButton(dashUrl, "View Your Dashboard")}
+  `);
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      params.to,
+    subject: `Payment confirmed — ${params.tierName} plan activated`,
+    html,
+  });
+}
+
+// ─── 6. Listing Activated ─────────────────────────────────────────────────────
+export async function sendListingActivatedEmail(params: {
+  to:       string;
+  name:     string;
+  slug:     string;
+  tierName: string;
+}) {
+  const profileUrl = `${APP_URL}/masseuse/${params.slug}`;
+  const dashUrl    = `${APP_URL}/dashboard`;
+
+  const html = emailWrapper(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+      Your listing is live! 🎉
+    </h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.6;">
+      Hi <strong>${params.name}</strong>, great news — your <strong>${params.tierName}</strong>
+      listing on ${APP_NAME} is now publicly visible to clients across Kenya.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+      Clients can now find your profile, view your services, and book sessions with you.
+      Make sure your profile is complete to maximise your bookings.
+    </p>
+    ${emailButton(profileUrl, "View Your Public Profile")}
+    <p style="margin:8px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
+      Or manage from your <a href="${dashUrl}" style="color:#e11d48;">dashboard →</a>
+    </p>
+  `);
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      params.to,
+    subject: `Your ${APP_NAME} listing is now live 🎉`,
+    html,
+  });
+}
+
+// ─── 7. Listing Expiring Soon ─────────────────────────────────────────────────
+export async function sendListingExpiringEmail(params: {
+  to:        string;
+  name:      string;
+  tierName:  string;
+  daysLeft:  number;
+  expiresAt: Date;
+}) {
+  const renewUrl = `${APP_URL}/dashboard/listing`;
+  const expires  = params.expiresAt.toLocaleDateString("en-KE", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+  const urgency  = params.daysLeft <= 1 ? "⚠️ Last chance!" : params.daysLeft <= 3 ? "⏳ Expiring soon" : "📅 Heads up";
+
+  const html = emailWrapper(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+      ${urgency} — Listing expires in ${params.daysLeft} day${params.daysLeft !== 1 ? "s" : ""}
+    </h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.6;">
+      Hi <strong>${params.name}</strong>, your <strong>${params.tierName}</strong> listing
+      on ${APP_NAME} will expire on <strong>${expires}</strong>.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+      Once it expires, your profile will be hidden from search results and clients
+      won't be able to find you. Renew now to stay visible without any interruption.
+    </p>
+    ${emailButton(renewUrl, "Renew My Listing")}
+    <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;">
+      Questions? Reply to this email or visit our <a href="${APP_URL}/help" style="color:#e11d48;">help centre</a>.
+    </p>
+  `);
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      params.to,
+    subject: `⚠️ Your ${APP_NAME} listing expires in ${params.daysLeft} day${params.daysLeft !== 1 ? "s" : ""}`,
+    html,
+  });
+}
+
+// ─── 8. Listing Rejected / Suspended ─────────────────────────────────────────
+export async function sendListingRejectedEmail(params: {
+  to:     string;
+  name:   string;
+  action: "SUSPEND" | "BAN" | "PENDING";
+  reason?: string;
+}) {
+  const supportUrl = `${APP_URL}/support`;
+  const dashUrl    = `${APP_URL}/dashboard`;
+
+  const headlines: Record<typeof params.action, string> = {
+    SUSPEND: "Your listing has been suspended",
+    BAN:     "Your account has been permanently banned",
+    PENDING: "Your profile has been returned for review",
+  };
+
+  const bodies: Record<typeof params.action, string> = {
+    SUSPEND: `Your <strong>${APP_NAME}</strong> profile has been temporarily suspended and is no longer visible to clients. Please review our community guidelines and contact support if you believe this was an error.`,
+    BAN:     `Your <strong>${APP_NAME}</strong> account has been permanently banned due to a violation of our terms of service. If you believe this decision was made in error, please contact our support team.`,
+    PENDING: `Your <strong>${APP_NAME}</strong> profile has been returned to pending status for additional review. Our team will get back to you shortly. Please ensure your profile meets our guidelines.`,
+  };
+
+  const html = emailWrapper(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+      ${headlines[params.action]}
+    </h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.6;">
+      Hi <strong>${params.name}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.6;">
+      ${bodies[params.action]}
+    </p>
+    ${params.reason ? `
+    <div style="background:#fef2f2;border-left:4px solid #fca5a5;border-radius:4px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#dc2626;font-weight:600;">Reason provided:</p>
+      <p style="margin:8px 0 0;font-size:14px;color:#7f1d1d;">${params.reason}</p>
+    </div>` : ""}
+    ${params.action !== "BAN"
+      ? emailButton(dashUrl, "Go to Dashboard")
+      : emailButton(supportUrl, "Contact Support")}
+  `);
+
+  return resend.emails.send({
+    from:    FROM,
+    to:      params.to,
+    subject: `Important: ${headlines[params.action]}`,
+    html,
+  });
+}

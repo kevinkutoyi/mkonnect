@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTransactionStatus, PesapalError } from "@/lib/pesapal";
 import { activateProfile, deactivateProfile } from "@/lib/profile-activation";
+import { notifyPaymentConfirmed, notifyListingActivated } from "@/lib/notifications";
 import type { PesapalStatusCode } from "@/lib/pesapal";
 
 // ── IPN (server-to-server POST from Pesapal) ───────────────────────────────────
@@ -109,7 +110,10 @@ async function processPayment(
   // ── Load subscription ───────────────────────────────────────────────────────
   const sub = await prisma.profileSubscription.findUnique({
     where:   { merchantReference },
-    include: { tier: true },
+    include: {
+      tier:    true,
+      profile: { select: { slug: true, user: { select: { id: true, name: true, email: true } } } },
+    },
   });
 
   if (!sub) {
@@ -185,6 +189,29 @@ async function processPayment(
         `[Pesapal] ACTIVATED — profile ${sub.profileId}, tier ${sub.tier.name}, ` +
         `listingActive=${activation.listingActive}, expires ${expiresAt.toISOString()}`
       );
+
+      // ── Notify user (fire-and-forget — never block the IPN response) ────────
+      const user = sub.profile?.user;
+      const slug = sub.profile?.slug ?? "";
+      if (user?.email) {
+        Promise.allSettled([
+          notifyPaymentConfirmed({
+            userId:    user.id,
+            email:     user.email,
+            name:      user.name ?? "there",
+            tierName:  sub.tier.displayName ?? sub.tier.name,
+            amount:    sub.amountPaid ? Number(sub.amountPaid) : 0,
+            expiresAt,
+          }),
+          notifyListingActivated({
+            userId:   user.id,
+            email:    user.email,
+            name:     user.name ?? "there",
+            slug,
+            tierName: sub.tier.displayName ?? sub.tier.name,
+          }),
+        ]).catch(console.error);
+      }
 
       return { outcome: "ACTIVATED", statusCode: code };
     }

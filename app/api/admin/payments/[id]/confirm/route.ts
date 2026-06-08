@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { activateProfile } from "@/lib/profile-activation";
+import { notifyPaymentConfirmed, notifyListingActivated } from "@/lib/notifications";
 import { z } from "zod";
 
 const BodySchema = z.object({
@@ -118,6 +119,28 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     `[AdminConfirm] Subscription ${sub.id} manually confirmed by admin ${session.user.id}. ` +
     `Profile ${sub.profileId} listingActive=${activation.listingActive}`
   );
+
+  // ── Notify masseuse (fire-and-forget) ─────────────────────────────────────
+  const user = sub.profile?.user;
+  if (user?.email) {
+    Promise.allSettled([
+      notifyPaymentConfirmed({
+        userId:    user.id,
+        email:     user.email,
+        name:      user.name ?? "there",
+        tierName:  sub.tier.displayName ?? sub.tier.name,
+        amount:    sub.amountPaid ? Number(sub.amountPaid) : 0,
+        expiresAt,
+      }),
+      notifyListingActivated({
+        userId:   user.id,
+        email:    user.email,
+        name:     user.name ?? "there",
+        slug:     "", // slug not selected in this query; notification still useful
+        tierName: sub.tier.displayName ?? sub.tier.name,
+      }),
+    ]).catch(console.error);
+  }
 
   return NextResponse.json({
     subscriptionId: sub.id,
