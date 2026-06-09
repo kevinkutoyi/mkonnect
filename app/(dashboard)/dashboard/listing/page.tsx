@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { TierSelector } from "@/components/tiers/TierSelector";
 import { TierBadge } from "@/components/tiers/TierBadge";
 import { PaymentStatusBanner } from "@/components/payments/PaymentStatusBanner";
+import {
+  ListingStatusCard,
+  type ListingStatus,
+} from "@/components/dashboard/ListingStatusCard";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -45,7 +49,7 @@ export default async function ListingPage({
           where:   { status: "ACTIVE", expiresAt: { gt: new Date() } },
           orderBy: { createdAt: "desc" },
           take:    1,
-          include: { tier: { select: { name: true, displayName: true, badge: true } } },
+          include: { tier: { select: { name: true, displayName: true, badge: true, durationDays: true } } },
         },
       },
     }),
@@ -59,6 +63,8 @@ export default async function ListingPage({
   });
 
   const activeSub = profile?.subscriptions[0] ?? null;
+  const now       = new Date();
+
   const activeSubForSelector = activeSub
     ? {
         tierId:    activeSub.tierId,
@@ -67,6 +73,26 @@ export default async function ListingPage({
         status:    activeSub.status,
       }
     : null;
+
+  // ── Listing status for the status card ──────────────────────────────────────
+  let listingStatus: ListingStatus;
+  if (activeSub && activeSub.expiresAt && activeSub.expiresAt > now) {
+    const daysLeft = Math.ceil(
+      (activeSub.expiresAt.getTime() - now.getTime()) / 86_400_000
+    );
+    listingStatus = {
+      state:        daysLeft <= 3 ? "EXPIRING" : "ACTIVE",
+      tierName:     activeSub.tier.displayName,
+      tierBadge:    activeSub.tier.badge ?? undefined,
+      expiresAt:    activeSub.expiresAt.toISOString(),
+      daysLeft,
+      durationDays: activeSub.tier.durationDays,
+    };
+  } else if (activeSub) {
+    listingStatus = { state: "EXPIRED" };
+  } else {
+    listingStatus = { state: "NONE" };
+  }
 
   // Normalise status — only pass values PaymentStatusBanner knows about
   const bannerStatus =
@@ -90,6 +116,9 @@ export default async function ListingPage({
           <TierBadge tier={profile.activeTierName} size="lg" />
         )}
       </div>
+
+      {/* Listing expiry status */}
+      <ListingStatusCard status={listingStatus} />
 
       {/* Payment status banner (client component — handles pending polling) */}
       <PaymentStatusBanner
