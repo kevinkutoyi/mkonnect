@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { OnboardingSchema } from "@/lib/validations/onboarding";
+import type { ServiceEntry } from "@/lib/validations/onboarding";
 import { createSlug } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
     await prisma.service.deleteMany({ where: { profileId: profile.id } });
     if (d.services.length > 0) {
       await prisma.service.createMany({
-        data: d.services.map((s, i) => ({
+        data: d.services.map((s: ServiceEntry, i) => ({
           profileId:      profile.id,
           categoryId:     s.categoryId,
           name:           s.name,
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Compute price range
-    const prices = d.services.map((s) => s.price);
+    const prices = d.services.map((s: ServiceEntry) => s.price);
     await prisma.masseuseProfile.update({
       where: { id: profile.id },
       data: {
