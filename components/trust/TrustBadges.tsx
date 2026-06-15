@@ -39,7 +39,7 @@ export function TrustBadges({
     {
       show:    isVerified,
       label:   verificationLevel === "FULLY_VERIFIED" ? "Fully Verified" : "ID Verified",
-      tooltip: "Identity verified by mconnect admin",
+      tooltip: "Identity verified by modelsraha admin",
       icon:    BadgeCheck,
       cls:     "bg-primary/10 text-primary border-primary/20",
     },

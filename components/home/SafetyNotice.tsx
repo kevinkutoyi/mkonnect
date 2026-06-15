@@ -43,7 +43,7 @@ export function SafetyNotice() {
               Built on Trust &amp; Transparency
             </h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              mconnect is a professional marketplace. We work only with verified, trained
+              modelsraha is a professional marketplace. We work only with verified, trained
               massage therapists. Our platform enforces a strict zero-tolerance policy
               against inappropriate conduct — keeping every booking safe for both clients and masseuses.
             </p>

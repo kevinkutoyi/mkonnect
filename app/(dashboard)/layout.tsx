@@ -25,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex h-16 items-center border-b px-4">
           <Link href="/" className="flex items-center gap-1.5 font-bold text-lg">
             <MapPin className="h-4 w-4 text-primary" />
-            m<span className="text-primary">connect</span>
+            models<span className="text-primary">raha</span>
           </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">

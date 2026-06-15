@@ -216,7 +216,7 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
           {existingProfile ? "Update your profile" : "Set up your profile"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Complete all steps to list your services on mconnect.
+          Complete all steps to list your services on modelsraha.
         </p>
       </div>
 

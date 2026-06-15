@@ -38,7 +38,7 @@ function LoginPageContent() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-1.5 font-bold text-2xl mb-2">
             <MapPin className="h-6 w-6 text-primary" />
-            m<span className="text-primary">connect</span>
+            models<span className="text-primary">raha</span>
           </Link>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>

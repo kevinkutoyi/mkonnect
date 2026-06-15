@@ -19,7 +19,7 @@ export function RegisterCTA() {
               For Professionals
             </p>
             <h2 className="text-4xl font-extrabold tracking-tight leading-tight md:text-5xl">
-              Grow Your Massage<br />Business on mconnect
+              Grow Your Massage<br />Business on modelsraha
             </h2>
             <p className="mt-4 text-lg opacity-80 leading-relaxed">
               Join hundreds of masseuses already building their client base on Kenya's

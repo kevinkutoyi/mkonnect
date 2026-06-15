@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // ── JSON-LD structured data ───────────────────────────────────────────────────
 function JsonLd({ profile }: { profile: any }) {
-  const base    = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+  const base    = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
   const cityStr = profile.city ? `${profile.city.name}, ${profile.city.county?.name ?? ""}` : "";
 
   const data = {

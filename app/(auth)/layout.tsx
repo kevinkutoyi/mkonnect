@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="hidden lg:flex flex-col justify-between bg-primary p-12 text-primary-foreground">
         <Link href="/" className="flex items-center gap-2 font-bold text-2xl">
           <MapPin className="h-6 w-6" />
-          mconnect
+          modelsraha
         </Link>
         <blockquote className="space-y-4">
           <p className="text-xl leading-relaxed font-light">
@@ -22,11 +22,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             connecting wellness seekers with certified therapists across every county."
           </p>
           <footer className="text-primary-foreground/70 text-sm">
-            mconnect Platform
+            modelsraha Platform
           </footer>
         </blockquote>
         <p className="text-primary-foreground/50 text-xs">
-          © {new Date().getFullYear()} mconnect. All rights reserved.
+          © {new Date().getFullYear()} modelsraha. All rights reserved.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="mb-8 flex justify-center lg:hidden">
             <Link href="/" className="flex items-center gap-2 font-bold text-2xl">
               <MapPin className="h-6 w-6 text-primary" />
-              m<span className="text-primary">connect</span>
+              models<span className="text-primary">raha</span>
             </Link>
           </div>
           {children}

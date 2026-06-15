@@ -21,7 +21,7 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1.5 font-bold text-xl">
           <MapPin className="h-5 w-5 text-primary" />
-          m<span className="text-primary">connect</span>
+          models<span className="text-primary">raha</span>
         </Link>
 
         {/* Desktop nav */}

@@ -11,7 +11,7 @@ import { prisma }            from "@/lib/prisma";
 import { tierOrderBy }       from "@/lib/tier-sort";
 import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 
-const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
 
 export const metadata: Metadata = {
   alternates: { canonical: BASE_URL },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 const websiteSchema = {
   "@context":        "https://schema.org",
   "@type":           "WebSite",
-  name:              "mconnect",
+  name:              "modelsraha",
   url:               BASE_URL,
   potentialAction: {
     "@type":        "SearchAction",

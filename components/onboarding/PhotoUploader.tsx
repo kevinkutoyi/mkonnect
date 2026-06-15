@@ -40,7 +40,7 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
         const sigRes = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ folder: "mconnect/profiles" }),
+          body: JSON.stringify({ folder: "modelsraha/profiles" }),
         });
         const { signature, timestamp, cloudName, apiKey, folder } = await sigRes.json();
 

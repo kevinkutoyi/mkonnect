@@ -11,7 +11,7 @@ import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Favorites — mconnect",
+  title: "My Favorites — modelsraha",
   description: "Your saved masseuse profiles.",
 };
 

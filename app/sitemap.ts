@@ -2,7 +2,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
-const BASE = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const BASE = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

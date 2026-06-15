@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="hidden w-60 shrink-0 flex-col border-r bg-card lg:flex">
         <div className="flex h-16 items-center gap-2 border-b px-5">
           <MapPin className="h-4 w-4 text-primary" />
-          <span className="font-bold tracking-tight">mconnect admin</span>
+          <span className="font-bold tracking-tight">modelsraha admin</span>
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
           {NAV.map(({ href, label, icon: Icon }) => (

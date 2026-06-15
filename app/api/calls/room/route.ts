@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   const { profileId, type } = await req.json();
 
-  const roomName = `mconnect-${profileId}-${Date.now()}`;
+  const roomName = `modelsraha-${profileId}-${Date.now()}`;
 
   const res = await fetch(`${DAILY_BASE}/rooms`, {
     method:  "POST",

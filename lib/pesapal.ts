@@ -1,5 +1,5 @@
 // lib/pesapal.ts
-// Pesapal v3 API client — mconnect
+// Pesapal v3 API client — modelsraha
 //
 // Pesapal status_code reference:
 //   1 = Invalid   (payment not found or still processing — treat as Pending)

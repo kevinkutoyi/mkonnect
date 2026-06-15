@@ -12,13 +12,13 @@ const inter = Inter({
   preload: true,
 });
 
-const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),   // required for absolute OG image URLs
   title: {
-    default: "mconnect — Find Professional Masseuses in Kenya",
-    template: "%s | mconnect",
+    default: "modelsraha — Find Professional Masseuses in Kenya",
+    template: "%s | modelsraha",
   },
   description:
     "Discover and book professional massage services across Kenya. Browse verified masseuses in Nairobi, Mombasa, Kisumu and more.",
@@ -27,20 +27,20 @@ export const metadata: Metadata = {
     type:     "website",
     locale:   "en_KE",
     url:      BASE_URL,
-    siteName: "mconnect",
+    siteName: "modelsraha",
     images: [
       {
         url:    "/og-default.jpg",   // place a 1200×630 image in /public
         width:  1200,
         height: 630,
-        alt:    "mconnect — Professional Massage Services in Kenya",
+        alt:    "modelsraha — Professional Massage Services in Kenya",
       },
     ],
   },
   twitter: {
     card:    "summary_large_image",
-    site:    "@mconnectke",
-    creator: "@mconnectke",
+    site:    "@modelsrahake",
+    creator: "@modelsrahake",
   },
   robots: {
     index:               true,
@@ -65,11 +65,11 @@ export const metadata: Metadata = {
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type":    "Organization",
-  name:       "mconnect",
+  name:       "modelsraha",
   url:        BASE_URL,
   logo:       `${BASE_URL}/logo.png`,
   sameAs: [
-    "https://twitter.com/mconnectke",
+    "https://twitter.com/modelsrahake",
     // add Facebook, Instagram URLs here
   ],
   contactPoint: {

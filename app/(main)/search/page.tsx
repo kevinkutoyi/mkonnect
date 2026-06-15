@@ -10,7 +10,7 @@ import { tierOrderBy }     from "@/lib/tier-sort";
 import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import type { Metadata }   from "next";
 
-const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
 
 interface SearchPageProps {
   searchParams: {

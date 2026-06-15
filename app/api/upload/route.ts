@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
 
-  const { folder = "mconnect/profiles" } = await req.json().catch(() => ({}));
+  const { folder = "modelsraha/profiles" } = await req.json().catch(() => ({}));
 
   const timestamp = Math.round(Date.now() / 1000);
   const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;

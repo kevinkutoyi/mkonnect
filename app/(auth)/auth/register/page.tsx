@@ -239,7 +239,7 @@ export default function RegisterPage() {
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" {...register("agreeToTerms")} className="mt-0.5 rounded" />
           <span className="text-muted-foreground leading-snug">
-            I agree to mconnect's{" "}
+            I agree to modelsraha's{" "}
             <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
             {" "}and{" "}
             <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>

@@ -35,7 +35,7 @@ function VerifyEmailPageContent() {
         <div>
           <h1 className="text-2xl font-bold">Email verified!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your email address has been confirmed. You're all set — welcome to mconnect!
+            Your email address has been confirmed. You're all set — welcome to modelsraha!
           </p>
         </div>
         <Link
