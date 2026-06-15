@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
           name:      user.name ?? "there",
           tierName:  sub.tier.displayName ?? sub.tier.name,
           daysLeft,
-          expiresAt: sub.expiresAt,
+          expiresAt: sub.expiresAt ?? new Date(),
         });
 
         warningResults.push({ subscriptionId: sub.id, daysLeft });
