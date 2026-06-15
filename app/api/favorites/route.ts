@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { auth }         from "@/lib/auth";
 import { prisma }       from "@/lib/prisma";
-import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import { tierOrderBy }           from "@/lib/tier-sort";
 
 export async function GET() {
@@ -14,7 +13,6 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       profile: {
-        where: { ...PUBLIC_PROFILE_FILTER },
         include: {
           user:       { select: { name: true } },
           city:       { include: { county: true } },
@@ -26,5 +24,7 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json(favs.filter((f) => f.profile)); // drop deactivated profiles
+  return NextResponse.json(
+    favs.filter((f) => f.profile?.status === "APPROVED" && f.profile?.listingActive)
+  );
 }

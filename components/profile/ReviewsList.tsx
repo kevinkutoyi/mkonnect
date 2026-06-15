@@ -43,7 +43,7 @@ export function ReviewsList({ reviews, avgRating, total }: Props) {
   // Compute distribution
   const dist = [5, 4, 3, 2, 1].map((star) => ({
     star,
-    count: reviews.filter((r) => Math.round(r.rating) === star).length,
+    count: reviews.filter((r) => Math.round(r.ratingOverall) === star).length,
   }));
 
   return (
@@ -93,7 +93,7 @@ export function ReviewsList({ reviews, avgRating, total }: Props) {
                     )}
                     <div>
                       <p className="text-sm font-semibold">{review.client.name}</p>
-                      <StarRating rating={review.rating} />
+                      <StarRating rating={review.ratingOverall} />
                     </div>
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">

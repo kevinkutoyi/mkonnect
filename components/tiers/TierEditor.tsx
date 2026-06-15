@@ -150,7 +150,7 @@ export function TierEditor({ tier, onUpdated }: TierEditorProps) {
       {!editing && (
         <div className="px-5 py-4 space-y-3 text-sm">
           <div className="flex flex-wrap gap-x-8 gap-y-2">
-            <div><span className="text-muted-foreground">Price:</span> <strong>{formatKES(tier.price)}</strong></div>
+            <div><span className="text-muted-foreground">Price:</span> <strong>{formatKES(Number(tier.price))}</strong></div>
             <div><span className="text-muted-foreground">Duration:</span> <strong>{tier.durationDays} days</strong></div>
             <div><span className="text-muted-foreground">Search boost:</span> <strong>+{tier.searchBoost}</strong></div>
             <div><span className="text-muted-foreground">Featured slots:</span> <strong>{tier.featuredSlots}</strong></div>

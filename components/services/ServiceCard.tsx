@@ -102,7 +102,7 @@ export function ServiceCard({ service, onEdit, onDelete, onToggle, dragging }: S
             {/* Deposit */}
             {service.requiresDeposit && service.depositAmount && (
               <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                Deposit required: {formatKES(service.depositAmount)}
+                Deposit required: {formatKES(Number(service.depositAmount))}
               </p>
             )}
 
@@ -120,11 +120,11 @@ export function ServiceCard({ service, onEdit, onDelete, onToggle, dragging }: S
             <div className="text-right">
               {service.discountPrice ? (
                 <>
-                  <p className="font-bold text-primary">{formatKES(service.discountPrice)}</p>
-                  <p className="text-xs text-muted-foreground line-through">{formatKES(service.price)}</p>
+                  <p className="font-bold text-primary">{formatKES(Number(service.discountPrice))}</p>
+                  <p className="text-xs text-muted-foreground line-through">{formatKES(Number(service.price))}</p>
                 </>
               ) : (
-                <p className="font-bold text-primary">{formatKES(service.price)}</p>
+                <p className="font-bold text-primary">{formatKES(Number(service.price))}</p>
               )}
               {service.discountPrice && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">

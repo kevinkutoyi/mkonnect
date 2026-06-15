@@ -92,7 +92,7 @@ export function BookingForm({ profile, clientId }: Props) {
                   </p>
                 </div>
               </div>
-              <span className="font-semibold text-primary">{formatKES(s.price)}</span>
+              <span className="font-semibold text-primary">{formatKES(Number(s.price))}</span>
             </label>
           ))}
         </div>
@@ -136,7 +136,7 @@ export function BookingForm({ profile, clientId }: Props) {
         <div className="rounded-lg bg-muted p-3 text-sm">
           <div className="flex justify-between">
             <span>{service.name}</span>
-            <span className="font-semibold">{formatKES(service.price)}</span>
+            <span className="font-semibold">{formatKES(Number(service.price))}</span>
           </div>
         </div>
       )}
@@ -146,7 +146,7 @@ export function BookingForm({ profile, clientId }: Props) {
         disabled={loading}
         className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
       >
-        {loading ? "Processing…" : `Pay ${service ? formatKES(service.price) : ""} via Pesapal`}
+        {loading ? "Processing…" : `Pay ${service ? formatKES(Number(service.price)) : ""} via Pesapal`}
       </button>
 
       <p className="text-center text-xs text-muted-foreground">

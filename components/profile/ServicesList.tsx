@@ -38,7 +38,7 @@ export function ServicesList({ services, profileId }: Props) {
 
             <div className="flex shrink-0 flex-col items-end gap-2">
               <span className="text-lg font-extrabold text-primary">
-                {formatKES(service.price)}
+                {formatKES(Number(service.price))}
               </span>
               <Link
                 href={`/booking/${profileId}`}
