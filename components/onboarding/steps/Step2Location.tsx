@@ -89,7 +89,7 @@ export function Step2Location({ form, counties }: Props) {
             { field: "mobileService", icon: "🏠", label: "Home / Hotel visits", sub: "You travel to the client" },
             { field: "spaService",    icon: "🛁", label: "My own space",         sub: "Client comes to you" },
           ].map(({ field, icon, label, sub }) => {
-            const checked = watch(field as string) as unknown as boolean;
+            const checked = watch(field as any) as boolean;
             return (
               <label
                 key={field}
