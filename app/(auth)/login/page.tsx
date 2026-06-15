@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 "use client";
+export const dynamic = "force-dynamic";
 // app/(auth)/login/page.tsx
 import Link from "next/link";
 import { signIn } from "next-auth/react";

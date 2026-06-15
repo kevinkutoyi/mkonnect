@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 "use client";
+export const dynamic = "force-dynamic";
 // app/(auth)/auth/reset-password/page.tsx
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
