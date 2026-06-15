@@ -53,13 +53,20 @@ export async function POST(req: NextRequest) {
   });
   if (!service) return NextResponse.json({ error: "Service not found" }, { status: 404 });
 
+  const scheduledAt = new Date(parsed.data.scheduledAt);
+  const durationMs  = (service.duration ?? 60) * 60 * 1000;
+  const endsAt      = new Date(scheduledAt.getTime() + durationMs);
+  const bookingRef  = `MCN-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
   const booking = await prisma.booking.create({
     data: {
-      clientId: session.user.id,
-      profileId: parsed.data.profileId,
-      serviceId: parsed.data.serviceId,
-      scheduledAt: new Date(parsed.data.scheduledAt),
-      notes: parsed.data.notes,
+      bookingRef,
+      clientId:    session.user.id,
+      profileId:   parsed.data.profileId,
+      serviceId:   parsed.data.serviceId,
+      scheduledAt,
+      endsAt,
+      notes:       parsed.data.notes,
       totalAmount: service.price,
     },
   });
