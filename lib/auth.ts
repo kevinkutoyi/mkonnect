@@ -2,7 +2,7 @@
 // NextAuth v5 (Auth.js) configuration
 // JWT strategy — role, id, emailVerified embedded in token
 
-import NextAuth, { type DefaultSession } from "next-auth";
+import NextAuth, { type DefaultSession, type Session } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -210,7 +210,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function requireRole(
   allowedRoles: Role[],
   redirectTo = "/login"
-): Promise<NonNullable<Awaited<ReturnType<typeof auth>>>> {
+): Promise<Session> {
   const { redirect } = await import("next/navigation");
   const session = await auth();
 

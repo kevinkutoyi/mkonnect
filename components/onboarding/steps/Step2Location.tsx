@@ -99,7 +99,7 @@ export function Step2Location({ form, counties }: Props) {
               >
                 <input
                   type="checkbox"
-                  {...register(field as string)}
+                  {...register(field as any)}
                   className="sr-only"
                 />
                 <span className="text-2xl">{icon}</span>
