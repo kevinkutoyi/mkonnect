@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
         where: { id: payment.id },
         data: {
           status: paymentStatus,
-          pesapalPaymentMethod: txStatus.payment_method,
           orderTrackingId,
         },
       }),
