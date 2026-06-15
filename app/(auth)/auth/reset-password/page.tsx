@@ -1,7 +1,6 @@
 "use client";
-export const dynamic = "force-dynamic";
 // app/(auth)/auth/reset-password/page.tsx
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -11,7 +10,7 @@ import { ResetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/
 
 type PageState = "form" | "success" | "invalid";
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -180,4 +179,7 @@ export default function ResetPasswordPage() {
       </form>
     </div>
   );
+}
+export default function ResetPasswordPage() {
+  return <Suspense><ResetPasswordPageContent /></Suspense>;
 }

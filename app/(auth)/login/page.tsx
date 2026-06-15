@@ -1,13 +1,12 @@
 "use client";
-export const dynamic = "force-dynamic";
 // app/(auth)/login/page.tsx
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin } from "lucide-react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
@@ -106,4 +105,7 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+export default function LoginPage() {
+  return <Suspense><LoginPageContent /></Suspense>;
 }

@@ -1,12 +1,11 @@
 "use client";
-export const dynamic = "force-dynamic";
 // app/(auth)/auth/verify-email/page.tsx
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, MailCheck, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageContent() {
   const searchParams = useSearchParams();
   const success = searchParams.get("success");
   const error = searchParams.get("error");
@@ -116,4 +115,7 @@ export default function VerifyEmailPage() {
       </Link>
     </div>
   );
+}
+export default function VerifyEmailPage() {
+  return <Suspense><VerifyEmailPageContent /></Suspense>;
 }
