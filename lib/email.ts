@@ -3,7 +3,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM ?? "noreply@modelsraha.co.ke";
+const FROM = process.env.EMAIL_FROM ?? "noreply@modelsraha.com";
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
 const APP_NAME = "modelsraha";
 
