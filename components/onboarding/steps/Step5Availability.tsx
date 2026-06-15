@@ -5,7 +5,7 @@ import type { OnboardingInput } from "@/lib/validations/onboarding";
 import { Field, Input } from "@/components/onboarding/FormField";
 import { Clock } from "lucide-react";
 
-const DAYS: { field: keyof OnboardingInput; short: string; long: string }[] = [
+const DAYS: { field: string; short: string; long: string }[] = [
   { field: "availableMon", short: "Mon", long: "Monday" },
   { field: "availableTue", short: "Tue", long: "Tuesday" },
   { field: "availableWed", short: "Wed", long: "Wednesday" },
@@ -152,7 +152,7 @@ export function Step5Availability({ form }: Props) {
           />
         </div>
         {errors.availableFrom && (
-          <p className="text-xs text-destructive">{errors.availableFrom.message}</p>
+          <p className="text-xs text-destructive">{errors.availableFrom.message as string}</p>
         )}
       </Field>
 

@@ -91,22 +91,19 @@ export function TrustBadgeIcons({
   return (
     <div className="flex gap-1">
       {isVerified && (
-        <BadgeCheck
-          className="h-4 w-4 text-primary drop-shadow"
-          title="Identity verified"
-        />
+        <span title="Identity verified">
+          <BadgeCheck className="h-4 w-4 text-primary drop-shadow" />
+        </span>
       )}
       {listingActive && (
-        <ShieldCheck
-          className="h-4 w-4 text-emerald-500 drop-shadow"
-          title="Active listing"
-        />
+        <span title="Active listing">
+          <ShieldCheck className="h-4 w-4 text-emerald-500 drop-shadow" />
+        </span>
       )}
       {listingActive && (
-        <CreditCard
-          className="h-4 w-4 text-sky-400 drop-shadow"
-          title="Payment verified"
-        />
+        <span title="Payment verified">
+          <CreditCard className="h-4 w-4 text-sky-400 drop-shadow" />
+        </span>
       )}
     </div>
   );

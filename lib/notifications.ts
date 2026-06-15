@@ -25,7 +25,8 @@ async function createNotification(params: {
   link?:    string;
   metadata?: Record<string, unknown>;
 }) {
-  return prisma.notification.create({ data: params });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return prisma.notification.create({ data: { ...params, metadata: params.metadata as any } });
 }
 
 // ── 1. Payment confirmed ──────────────────────────────────────────────────────

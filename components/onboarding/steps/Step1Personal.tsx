@@ -30,7 +30,7 @@ export function Step1Personal({ form }: Props) {
   const toggleContact = (val: typeof CONTACT_OPTIONS[number]["value"]) => {
     const current = contactPrefs;
     if (current.includes(val)) {
-      setValue("contactPreference", current.filter((v) => v !== val), { shouldValidate: true });
+      setValue("contactPreference", (current as string[]).filter((v: string) => v !== val) as ("PHONE" | "WHATSAPP" | "EMAIL")[], { shouldValidate: true });
     } else {
       setValue("contactPreference", [...current, val], { shouldValidate: true });
     }

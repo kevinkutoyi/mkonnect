@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     include: {
       service: true,
       client: true,
+      payment: { select: { status: true } },
     },
   });
 

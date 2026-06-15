@@ -25,7 +25,7 @@ export function Step3Profile({ form }: Props) {
   const toggleLang = (lang: string) => {
     setValue(
       "languages",
-      langs.includes(lang) ? langs.filter((l) => l !== lang) : [...langs, lang],
+      langs.includes(lang) ? langs.filter((l: string) => l !== lang) : [...langs, lang],
       { shouldValidate: true }
     );
   };

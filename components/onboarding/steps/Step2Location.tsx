@@ -89,7 +89,7 @@ export function Step2Location({ form, counties }: Props) {
             { field: "mobileService", icon: "🏠", label: "Home / Hotel visits", sub: "You travel to the client" },
             { field: "spaService",    icon: "🛁", label: "My own space",         sub: "Client comes to you" },
           ].map(({ field, icon, label, sub }) => {
-            const checked = watch(field as keyof OnboardingInput) as boolean;
+            const checked = watch(field as string) as boolean;
             return (
               <label
                 key={field}
@@ -99,7 +99,7 @@ export function Step2Location({ form, counties }: Props) {
               >
                 <input
                   type="checkbox"
-                  {...register(field as keyof OnboardingInput)}
+                  {...register(field as string)}
                   className="sr-only"
                 />
                 <span className="text-2xl">{icon}</span>

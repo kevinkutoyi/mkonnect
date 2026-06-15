@@ -126,7 +126,7 @@ export const Step4Schema = z.object({
 // ─── Step 5 — Availability & Preferences ────────────────────────────────────
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/; // HH:MM 24-hour
 
-export const Step5Schema = z
+const Step5Base = z
   .object({
     availableMon: z.boolean().default(false),
     availableTue: z.boolean().default(false),
@@ -143,7 +143,9 @@ export const Step5Schema = z
       .string()
       .regex(TIME_REGEX, "Use HH:MM format (e.g. 20:00)")
       .default("20:00"),
-  })
+  });
+
+export const Step5Schema = Step5Base
   .refine(
     (d) =>
       [d.availableMon, d.availableTue, d.availableWed, d.availableThu, d.availableFri, d.availableSat, d.availableSun].some(Boolean),
@@ -159,7 +161,16 @@ export const OnboardingSchema = Step1Schema
   .merge(Step2Schema)
   .merge(Step3Schema)
   .merge(Step4Schema)
-  .merge(Step5Schema);
+  .merge(Step5Base)
+  .refine(
+    (d) =>
+      [d.availableMon, d.availableTue, d.availableWed, d.availableThu, d.availableFri, d.availableSat, d.availableSun].some(Boolean),
+    { message: "Select at least one working day", path: ["availableMon"] }
+  )
+  .refine(
+    (d) => d.availableFrom < d.availableTo,
+    { message: "Start time must be before end time", path: ["availableTo"] }
+  );
 
 export type OnboardingInput  = z.infer<typeof OnboardingSchema>;
 export type Step1Input       = z.infer<typeof Step1Schema>;
