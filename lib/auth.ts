@@ -33,6 +33,7 @@ declare module "next-auth" {
 
 // ─── Auth config ──────────────────────────────────────────────────────────────
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   adapter: PrismaAdapter(prisma) as any,
 
   // JWT sessions — stateless, role embedded in token
