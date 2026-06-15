@@ -141,7 +141,7 @@ export default async function FavoritesPage() {
                   <div className="flex items-center justify-between">
                     {from ? (
                       <p className="text-sm text-muted-foreground">
-                        From <span className="font-bold text-foreground">{formatKES(from.price)}</span>
+                        From <span className="font-bold text-foreground">{formatKES(Number(from.price))}</span>
                       </p>
                     ) : <span />}
                     <Link
