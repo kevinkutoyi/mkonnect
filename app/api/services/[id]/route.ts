@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UpdateServiceSchema } from "@/lib/validations/service";
-import { updateProfilePriceRange } from "@/app/api/services/route";
+import { updateProfilePriceRange } from "@/lib/services";
 
 // ─── Shared ownership guard ───────────────────────────────────────────────────
 async function getOwnedService(id: string, userId: string) {

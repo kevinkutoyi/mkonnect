@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "My Services — mconnect" };
 export default async function ServicesPage() {
   const session = await auth();
 
-  const [categories, profile] = await Promise.all([
+  const [rawCategories, profile] = await Promise.all([
     prisma.category.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -28,6 +28,9 @@ export default async function ServicesPage() {
       },
     }),
   ]);
+
+  // Coerce icon: null → "" to satisfy the Category type
+  const categories = rawCategories.map((c) => ({ ...c, icon: c.icon ?? "" }));
 
   return (
     <ServicesManager

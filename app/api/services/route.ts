@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CreateServiceSchema } from "@/lib/validations/service";
+import { updateProfilePriceRange } from "@/lib/services";
 
 // ─── GET: list own services ───────────────────────────────────────────────────
 export async function GET() {
@@ -87,19 +88,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(service, { status: 201 });
 }
 
-// ─── Helper: keep minPrice / maxPrice in sync ─────────────────────────────────
-// Must NOT be exported — Next.js treats all route file exports as HTTP handlers
-async function updateProfilePriceRange(profileId: string) {
-  const agg = await prisma.service.aggregate({
-    where: { profileId, isActive: true },
-    _min: { price: true },
-    _max: { price: true },
-  });
-  await prisma.masseuseProfile.update({
-    where: { id: profileId },
-    data: {
-      minPrice: agg._min.price ?? undefined,
-      maxPrice: agg._max.price ?? undefined,
-    },
-  });
-}
