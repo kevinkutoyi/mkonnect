@@ -58,7 +58,7 @@ export function Navbar() {
                 Log in
               </Link>
               <Link
-                href="/register"
+                href="/auth/register"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Sign up
@@ -95,7 +95,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
-                <Link href="/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
+                <Link href="/auth/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
               </>
             )}
             <ThemeToggle />
