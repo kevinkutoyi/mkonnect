@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 "use client";
 // app/(auth)/auth/verify-email/page.tsx
 import { useSearchParams } from "next/navigation";

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 "use client";
 // app/(auth)/auth/reset-password/page.tsx
 import { useState } from "react";

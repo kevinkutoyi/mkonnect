@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 "use client";
 // app/(auth)/login/page.tsx
 import Link from "next/link";
