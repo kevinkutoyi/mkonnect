@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       client: { select: { id: true, name: true, email: true, phone: true } },
       service: true,
       payment: { select: { id: true, status: true, merchantReference: true, orderTrackingId: true } },
-      review: { select: { id: true, rating: true, comment: true } },
+      review: { select: { id: true, ratingOverall: true, comment: true } },
     },
   });
 
