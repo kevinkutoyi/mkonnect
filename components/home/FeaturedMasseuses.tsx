@@ -33,8 +33,9 @@ export function FeaturedMasseuses({ masseuses }: Props) {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {masseuses.map((m) => (
-            <MasseuseCard key={m.id} masseuse={m} />
+          {masseuses.map((m, i) => (
+            // First 3 are above the fold — preload their cover images (LCP)
+            <MasseuseCard key={m.id} masseuse={m} priority={i < 3} />
           ))}
         </div>
 

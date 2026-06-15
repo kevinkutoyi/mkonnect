@@ -1,4 +1,5 @@
 // app/(main)/page.tsx
+import type { Metadata }     from "next";
 import { Hero }              from "@/components/home/Hero";
 import { FeaturedMasseuses } from "@/components/home/FeaturedMasseuses";
 import { Categories }        from "@/components/home/Categories";
@@ -9,6 +10,25 @@ import { RegisterCTA }       from "@/components/home/RegisterCTA";
 import { prisma }            from "@/lib/prisma";
 import { tierOrderBy }       from "@/lib/tier-sort";
 import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
+
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+
+export const metadata: Metadata = {
+  alternates: { canonical: BASE_URL },
+};
+
+// WebSite schema — enables Google Sitelinks Search Box
+const websiteSchema = {
+  "@context":        "https://schema.org",
+  "@type":           "WebSite",
+  name:              "mconnect",
+  url:               BASE_URL,
+  potentialAction: {
+    "@type":        "SearchAction",
+    target:         { "@type": "EntryPoint", urlTemplate: `${BASE_URL}/search?q={search_term_string}` },
+    "query-input":  "required name=search_term_string",
+  },
+};
 
 export default async function HomePage() {
   const [featured, locations, categories, cities] = await Promise.all([
@@ -53,6 +73,11 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* WebSite structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
       <Hero locations={locations} />
       <FeaturedMasseuses masseuses={featured} />
       <Categories categories={categories} />

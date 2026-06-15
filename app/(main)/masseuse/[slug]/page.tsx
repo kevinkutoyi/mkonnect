@@ -1,21 +1,46 @@
 // app/(main)/masseuse/[slug]/page.tsx
 import { notFound }        from "next/navigation";
 import type { Metadata }   from "next";
+import dynamic             from "next/dynamic";
+import { Suspense }        from "react";
 import { prisma }          from "@/lib/prisma";
 import { auth }            from "@/lib/auth";
 import { ProfileHero }     from "@/components/profile/ProfileHero";
 import { ProfileBio }      from "@/components/profile/ProfileBio";
 import { ServicesList }    from "@/components/profile/ServicesList";
-import { PhotoGallery }    from "@/components/profile/PhotoGallery";
 import { ReviewsList }     from "@/components/profile/ReviewsList";
-import { ReviewForm }      from "@/components/reviews/ReviewForm";
 import { BookingSidebar }  from "@/components/profile/BookingSidebar";
 import { ContactBar }      from "@/components/contact/ContactBar";
 import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
 import { FavoriteButton }   from "@/components/favorites/FavoriteButton";
 import type { TierName }   from "@prisma/client";
 
+// ── Lazy-load below-the-fold heavy components ─────────────────────────────────
+// PhotoGallery uses lightbox JS; ReviewForm is client-only — both safely deferred
+const PhotoGallery = dynamic(
+  () => import("@/components/profile/PhotoGallery").then((m) => m.PhotoGallery),
+  { loading: () => <div className="h-48 animate-pulse rounded-xl bg-muted" /> }
+);
+const ReviewForm = dynamic(
+  () => import("@/components/reviews/ReviewForm").then((m) => m.ReviewForm),
+  { loading: () => <div className="h-32 animate-pulse rounded-xl bg-muted" /> }
+);
+
+// ── ISR — revalidate profile pages every hour ─────────────────────────────────
+export const revalidate = 3600;
+
 interface Props { params: { slug: string } }
+
+// Pre-render top 50 profiles at build time; all others generate on-demand + cache
+export async function generateStaticParams() {
+  const masseuses = await prisma.masseuseProfile.findMany({
+    where:   { status: "APPROVED", listingActive: true },
+    select:  { slug: true },
+    orderBy: { avgRating: "desc" },
+    take:    50,
+  });
+  return masseuses.map(({ slug }) => ({ slug }));
+}
 
 async function getMasseuse(slug: string) {
   return prisma.masseuseProfile.findUnique({

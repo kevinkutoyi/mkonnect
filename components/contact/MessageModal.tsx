@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Send, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { getInitials } from "@/lib/utils";
 
 interface Message {
@@ -117,8 +118,13 @@ export function MessageModal({
         <div className="flex items-center gap-3 border-b px-4 py-3">
           <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10">
             {profileAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profileAvatar} alt={profileName} className="h-full w-full object-cover" />
+              <Image
+                src={profileAvatar}
+                alt={profileName}
+                fill
+                sizes="36px"
+                className="object-cover"
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-xs font-bold text-primary">
                 {getInitials(profileName)}

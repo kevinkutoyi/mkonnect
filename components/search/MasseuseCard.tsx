@@ -9,6 +9,8 @@ import type { TierName } from "@prisma/client";
 
 interface Props {
   masseuse: any;
+  /** Pass true for above-the-fold cards to avoid lazy loading the LCP image */
+  priority?: boolean;
 }
 
 // Rotate through subtle accent colours for category pills
@@ -49,7 +51,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-export function MasseuseCard({ masseuse }: Props) {
+export function MasseuseCard({ masseuse, priority = false }: Props) {
   const coverPhoto  = masseuse.photos?.[0];
   const services    = masseuse.services ?? [];
   const categories  = masseuse.categories?.map((c: any) => c.category ?? c) ?? [];
@@ -66,6 +68,7 @@ export function MasseuseCard({ masseuse }: Props) {
             src={coverPhoto.url}
             alt={masseuse.user.name}
             fill
+            priority={priority}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
