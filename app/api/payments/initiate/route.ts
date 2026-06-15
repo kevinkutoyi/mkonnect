@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { registerIPN, submitOrder } from "@/lib/pesapal";
+import { getOrRegisterIPN, submitOrder } from "@/lib/pesapal";
 import { generateMerchantRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const merchantReference = generateMerchantRef();
 
   // Register IPN
-  const ipnId = await registerIPN();
+  const ipnId = await getOrRegisterIPN();
 
   const nameParts = booking.client.name.split(" ");
   const result = await submitOrder({

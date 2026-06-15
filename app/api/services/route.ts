@@ -88,7 +88,8 @@ export async function POST(req: NextRequest) {
 }
 
 // ─── Helper: keep minPrice / maxPrice in sync ─────────────────────────────────
-export async function updateProfilePriceRange(profileId: string) {
+// Must NOT be exported — Next.js treats all route file exports as HTTP handlers
+async function updateProfilePriceRange(profileId: string) {
   const agg = await prisma.service.aggregate({
     where: { profileId, isActive: true },
     _min: { price: true },
