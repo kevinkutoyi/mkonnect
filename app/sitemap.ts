@@ -15,10 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
     prisma.city.findMany({
       where:  { isMajor: true },
-      select: { slug: true, updatedAt: true },
+      select: { slug: true },
     }),
     prisma.county.findMany({
-      select: { slug: true, updatedAt: true },
+      select: { slug: true },
     }),
     prisma.category.findMany({
       where:  { isActive: true },
@@ -44,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ── City search pages ───────────────────────────────────────────────────
     ...cities.map((c) => ({
       url:             `${BASE}/search?location=${c.slug}`,
-      lastModified:    c.updatedAt ?? now,
+      lastModified:    now,
       changeFrequency: "daily" as const,
       priority:        0.85,
     })),
@@ -52,7 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ── County search pages ─────────────────────────────────────────────────
     ...counties.map((c) => ({
       url:             `${BASE}/search?county=${c.slug}`,
-      lastModified:    c.updatedAt ?? now,
+      lastModified:    now,
       changeFrequency: "daily" as const,
       priority:        0.75,
     })),
