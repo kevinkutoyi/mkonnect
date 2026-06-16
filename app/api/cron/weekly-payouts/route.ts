@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
     error?:     string;
   }> = [];
 
-  for (const entry of byProfile.values()) {
+  for (const entry of Array.from(byProfile.values())) {
     // Skip if no payout phone registered
     if (!entry.payoutPhone) {
       results.push({
