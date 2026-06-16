@@ -37,10 +37,14 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
 
       try {
         // 1. Get signed params from our API
+        const TRANSFORMATION = "c_fill,g_face,w_400,h_400,q_auto,f_auto";
         const sigRes = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ folder: "modelsraha/profiles" }),
+          body: JSON.stringify({
+            folder: "modelsraha/profiles",
+            transformation: TRANSFORMATION,
+          }),
         });
         const { signature, timestamp, cloudName, apiKey, folder } = await sigRes.json();
 
@@ -51,6 +55,7 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
         form.append("timestamp", timestamp);
         form.append("signature", signature);
         form.append("folder", folder);
+        form.append("transformation", TRANSFORMATION);
 
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = (e) => {

@@ -30,7 +30,7 @@ export function ContactBar({ profile, currentUserId }: Props) {
 
   const phone = profile.user.phone?.replace(/\D/g, "");
   const waMsg = encodeURIComponent(
-    `Hi ${profile.user.name}, I found your profile on modelsraha and I'd like to book a session.`
+    `Hi ${profile.user.name}, I found your profile on mconnect and I'd like to book a session.`
   );
   const waUrl = phone ? `https://wa.me/${phone}?text=${waMsg}` : null;
 

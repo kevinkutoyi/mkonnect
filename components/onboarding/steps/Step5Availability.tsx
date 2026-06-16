@@ -5,7 +5,7 @@ import type { OnboardingInput } from "@/lib/validations/onboarding";
 import { Field, Input } from "@/components/onboarding/FormField";
 import { Clock } from "lucide-react";
 
-const DAYS: { field: string; short: string; long: string }[] = [
+const DAYS: { field: keyof OnboardingInput; short: string; long: string }[] = [
   { field: "availableMon", short: "Mon", long: "Monday" },
   { field: "availableTue", short: "Tue", long: "Tuesday" },
   { field: "availableWed", short: "Wed", long: "Wednesday" },
@@ -32,20 +32,20 @@ export function Step5Availability({ form }: Props) {
   const to = watch("availableTo");
 
   // Check at least one day selected for the error
-  const anyDay = DAYS.some((d) => watch(d.field as any) as boolean);
+  const anyDay = DAYS.some((d) => watch(d.field) as boolean);
   const dayError = !anyDay && (errors as any).availableMon?.message;
 
   // Weekday / weekend shortcuts
   const setWeekdays = () =>
     DAYS.forEach((d) =>
-      setValue(d.field as any, !["availableSat","availableSun"].includes(d.field as string) as any, { shouldValidate: true })
+      setValue(d.field, !["availableSat","availableSun"].includes(d.field as string) as any, { shouldValidate: true })
     );
   const setWeekend = () =>
     DAYS.forEach((d) =>
-      setValue(d.field as any, ["availableSat","availableSun"].includes(d.field as string) as any, { shouldValidate: true })
+      setValue(d.field, ["availableSat","availableSun"].includes(d.field as string) as any, { shouldValidate: true })
     );
   const setAllDays = () =>
-    DAYS.forEach((d) => setValue(d.field as any, true as any, { shouldValidate: true }));
+    DAYS.forEach((d) => setValue(d.field, true as any, { shouldValidate: true }));
 
   return (
     <div className="space-y-6">
@@ -83,12 +83,12 @@ export function Step5Availability({ form }: Props) {
         {/* Day toggles */}
         <div className="grid grid-cols-7 gap-1.5">
           {DAYS.map(({ field, short, long }) => {
-            const active = watch(field as any) as boolean;
+            const active = watch(field) as boolean;
             return (
               <label key={field} className="flex flex-col items-center gap-1" title={long}>
                 <input
                   type="checkbox"
-                  {...register(field as any)}
+                  {...register(field)}
                   className="sr-only"
                 />
                 <div
@@ -97,7 +97,7 @@ export function Step5Availability({ form }: Props) {
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border hover:border-primary/40 text-muted-foreground"
                   }`}
-                  onClick={() => setValue(field as any, !active as any, { shouldValidate: true })}
+                  onClick={() => setValue(field, !active as any, { shouldValidate: true })}
                 >
                   {short}
                 </div>
@@ -152,7 +152,7 @@ export function Step5Availability({ form }: Props) {
           />
         </div>
         {errors.availableFrom && (
-          <p className="text-xs text-destructive">{errors.availableFrom.message as string}</p>
+          <p className="text-xs text-destructive">{errors.availableFrom.message}</p>
         )}
       </Field>
 
@@ -162,7 +162,7 @@ export function Step5Availability({ form }: Props) {
           <p className="font-semibold">Your schedule preview</p>
           <p className="text-muted-foreground">
             <span className="font-medium text-foreground">
-              {DAYS.filter((d) => watch(d.field as any) as boolean).map((d) => d.short).join(", ")}
+              {DAYS.filter((d) => watch(d.field) as boolean).map((d) => d.short).join(", ")}
             </span>
             {" · "}
             {from} – {to}

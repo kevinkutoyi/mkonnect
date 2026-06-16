@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       merchantReference,
       amount:           Number(tier.price),
       currency:         "KES",
-      description:      `modelsraha ${tier.displayName} Listing — ${tier.durationDays} days`,
+      description:      `mconnect ${tier.displayName} Listing — ${tier.durationDays} days`,
       callbackUrl,
       cancellationUrl,
       ipnId,

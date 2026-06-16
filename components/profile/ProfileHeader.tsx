@@ -32,16 +32,16 @@ export function ProfileHeader({ profile }: Props) {
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />
-              {profile.location.town}, {profile.location.county}
+              {profile.city?.name}{profile.city?.county ? `, ${profile.city.county.name}` : ""}
             </span>
             <span className="flex items-center gap-1">
               <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
               {profile.avgRating.toFixed(1)} ({profile.totalReviews} reviews)
             </span>
-            {profile.yearsExp && (
+            {profile.yearsExperience && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {profile.yearsExp} years experience
+                {profile.yearsExperience} years experience
               </span>
             )}
           </div>

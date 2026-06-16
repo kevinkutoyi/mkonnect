@@ -2,11 +2,11 @@
 // app/(auth)/login/page.tsx
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin } from "lucide-react";
 
-function LoginPageContent() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
@@ -38,7 +38,7 @@ function LoginPageContent() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-1.5 font-bold text-2xl mb-2">
             <MapPin className="h-6 w-6 text-primary" />
-            models<span className="text-primary">raha</span>
+            m<span className="text-primary">connect</span>
           </Link>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>
@@ -100,12 +100,9 @@ function LoginPageContent() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
-          <Link href="/auth/register" className="font-medium text-primary hover:underline">Sign up</Link>
+          <Link href="/register" className="font-medium text-primary hover:underline">Sign up</Link>
         </p>
       </div>
     </div>
   );
-}
-export default function LoginPage() {
-  return <Suspense><LoginPageContent /></Suspense>;
 }

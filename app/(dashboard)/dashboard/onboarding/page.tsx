@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Set Up Your Profile — modelsraha" };
+export const metadata: Metadata = { title: "Set Up Your Profile — mconnect" };
 
 export default async function OnboardingPage() {
   const session = await auth();

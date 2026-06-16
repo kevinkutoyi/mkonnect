@@ -18,7 +18,7 @@ export function SearchResults({ masseuses, total, page, pageSize }: Props) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border bg-card py-24 text-center">
         <SearchX className="mb-4 h-12 w-12 text-muted-foreground/40" />
-        <p className="text-lg font-semibold">No masseuses found</p>
+        <p className="text-lg font-semibold">No models found</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Try broadening your filters or searching a different location.
         </p>

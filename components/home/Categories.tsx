@@ -78,7 +78,7 @@ export function Categories({ categories }: Props) {
                   <p className="font-semibold text-sm leading-tight">{cat.name}</p>
                   {cat._count.profiles > 0 && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {cat._count.profiles} masseuse{cat._count.profiles !== 1 ? "s" : ""}
+                      {cat._count.profiles} model{cat._count.profiles !== 1 ? "s" : ""}
                     </p>
                   )}
                 </div>

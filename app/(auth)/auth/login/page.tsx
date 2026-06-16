@@ -1,6 +1,6 @@
 "use client";
 // app/(auth)/auth/login/page.tsx
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { LoginSchema, type LoginInput } from "@/lib/validations/auth";
+import type { Metadata } from "next";
 
 // Auth error messages mapped from NextAuth error codes
 const AUTH_ERRORS: Record<string, string> = {
@@ -20,7 +21,7 @@ const AUTH_ERRORS: Record<string, string> = {
   default: "Something went wrong. Please try again.",
 };
 
-function LoginPageContent() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
@@ -61,7 +62,7 @@ function LoginPageContent() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sign in to your modelsraha account
+          Sign in to your mconnect account
         </p>
       </div>
 
@@ -185,7 +186,4 @@ function GoogleIcon() {
       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
     </svg>
   );
-}
-export default function LoginPage() {
-  return <Suspense><LoginPageContent /></Suspense>;
 }

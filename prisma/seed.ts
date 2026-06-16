@@ -101,7 +101,7 @@ const CATEGORIES: {
 
 // ─── Seed runner ─────────────────────────────────────────────────────────────
 async function main() {
-  console.log("🌱 Seeding modelsraha database…\n");
+  console.log("🌱 Seeding mconnect database…\n");
 
   // 1. Counties
   console.log(`📍 Seeding ${KENYA_COUNTIES.length} counties…`);
@@ -158,18 +158,18 @@ async function main() {
 
   // 4. Admin user
   console.log(`\n👤 Seeding admin user…`);
-  const adminPassword = await bcrypt.hash("Admin@modelsraha2024!", 12);
+  const adminPassword = await bcrypt.hash("Admin@mconnect2024!", 12);
   await prisma.user.upsert({
-    where: { email: "admin@modelsraha.co.ke" },
+    where: { email: "admin@mconnect.co.ke" },
     update: {},
     create: {
       name: "Platform Admin",
-      email: "admin@modelsraha.co.ke",
+      email: "admin@mconnect.co.ke",
       password: adminPassword,
       role: "ADMIN",
     },
   });
-  console.log("   ✓ admin@modelsraha.co.ke");
+  console.log("   ✓ admin@mconnect.co.ke");
 
   // 5. Listing tiers
   console.log(`\n🏷️  Seeding ${LISTING_TIERS.length} listing tiers…`);

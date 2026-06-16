@@ -111,7 +111,7 @@ export default function RegisterPage() {
           >
             <input type="radio" value={r} {...register("role")} className="sr-only" />
             <span className="text-2xl">{r === "VISITOR" ? "🛁" : "💆"}</span>
-            <span className="font-semibold">{r === "VISITOR" ? "Client" : "Masseuse"}</span>
+            <span className="font-semibold">{r === "VISITOR" ? "Client" : "Model"}</span>
             <span className="text-xs text-muted-foreground leading-tight">
               {r === "VISITOR" ? "Book massage sessions" : "Offer massage services"}
             </span>
@@ -239,7 +239,7 @@ export default function RegisterPage() {
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" {...register("agreeToTerms")} className="mt-0.5 rounded" />
           <span className="text-muted-foreground leading-snug">
-            I agree to modelsraha's{" "}
+            I agree to mconnect's{" "}
             <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
             {" "}and{" "}
             <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>

@@ -19,10 +19,10 @@ export function RegisterCTA() {
               For Professionals
             </p>
             <h2 className="text-4xl font-extrabold tracking-tight leading-tight md:text-5xl">
-              Grow Your Massage<br />Business on modelsraha
+              Grow Your Massage<br />Business on mconnect
             </h2>
             <p className="mt-4 text-lg opacity-80 leading-relaxed">
-              Join hundreds of masseuses already building their client base on Kenya's
+              Join hundreds of models already building their client base on Kenya's
               fastest-growing wellness marketplace. Free to get started.
             </p>
 
@@ -41,7 +41,7 @@ export function RegisterCTA() {
             {/* CTAs */}
             <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
               <Link
-                href="/auth/register"
+                href="/register"
                 className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-primary shadow-lg transition-all hover:bg-white/90 hover:shadow-xl hover:-translate-y-0.5"
               >
                 Join for free <ArrowRight className="h-4 w-4" />

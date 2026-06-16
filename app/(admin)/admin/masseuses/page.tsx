@@ -169,7 +169,7 @@ function ProfileCard({
           </div>
 
           <a
-            href={`/masseuse/${profile.slug}`}
+            href={`/model/${profile.slug}`}
             target="_blank"
             className="shrink-0 rounded-xl border p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
             title="View public profile"
@@ -329,7 +329,7 @@ export default function AdminMasseusesPage() {
       <div>
         <h1 className="text-2xl font-bold">Profile Moderation</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Approve, suspend, or remove masseuse profiles
+          Approve, suspend, or remove model profiles
         </p>
       </div>
 

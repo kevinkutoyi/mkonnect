@@ -25,8 +25,7 @@ async function createNotification(params: {
   link?:    string;
   metadata?: Record<string, unknown>;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return prisma.notification.create({ data: { ...params, metadata: params.metadata as any } });
+  return prisma.notification.create({ data: params });
 }
 
 // ── 1. Payment confirmed ──────────────────────────────────────────────────────
@@ -71,7 +70,7 @@ export async function notifyListingActivated(params: {
       type:    "listing_activated",
       title:   "Your listing is live!",
       message: `Your ${params.tierName} profile is now visible to clients across Kenya.`,
-      link:    `/masseuse/${params.slug}`,
+      link:    `/model/${params.slug}`,
       metadata: { tierName: params.tierName },
     }),
     sendListingActivatedEmail({

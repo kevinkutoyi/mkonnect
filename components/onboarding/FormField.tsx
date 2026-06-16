@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface FieldProps {
   label: string;
-  error?: string | { message?: string };
+  error?: string;
   hint?: string;
   required?: boolean;
   className?: string;
@@ -21,7 +21,7 @@ export function Field({ label, error, hint, required, className, children }: Fie
       </label>
       {children}
       {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="text-xs text-destructive">{typeof error === "string" ? error : error?.message}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { syncProfileActivation } from "@/lib/profile-activation";
+import { notifyListingRejected } from "@/lib/notifications";
 
 const ApproveSchema = z.object({
   profileId: z.string(),
@@ -41,13 +42,35 @@ const ACTIVATION_REASON_MAP = {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Notify user of suspend/ban/pending actions
+  if (["SUSPEND","BAN","PENDING"].includes(action)) {
+    notifyListingRejected({
+      userId:  profile.user.id,
+      email:   profile.user.email,
+      name:    profile.user.name,
+      action:  action as "SUSPEND" | "BAN" | "PENDING",
+      reason,
+    }).catch(console.error);
+  }
+
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body   = await req.json();
   const parsed = ApproveSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    // Notify user of suspend/ban/pending actions
+  if (["SUSPEND","BAN","PENDING"].includes(action)) {
+    notifyListingRejected({
+      userId:  profile.user.id,
+      email:   profile.user.email,
+      name:    profile.user.name,
+      action:  action as "SUSPEND" | "BAN" | "PENDING",
+      reason,
+    }).catch(console.error);
+  }
+
+  return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const { profileId, action, reason } = parsed.data;
@@ -78,6 +101,17 @@ export async function POST(req: NextRequest) {
     profileId,
     ACTIVATION_REASON_MAP[action] as any
   );
+
+  // Notify user of suspend/ban/pending actions
+  if (["SUSPEND","BAN","PENDING"].includes(action)) {
+    notifyListingRejected({
+      userId:  profile.user.id,
+      email:   profile.user.email,
+      name:    profile.user.name,
+      action:  action as "SUSPEND" | "BAN" | "PENDING",
+      reason,
+    }).catch(console.error);
+  }
 
   return NextResponse.json({
     profileId,

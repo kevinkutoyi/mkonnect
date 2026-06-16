@@ -236,7 +236,7 @@ export function SearchFilters({ counties, categories }: FilterProps) {
           <label className="flex cursor-pointer items-center justify-between rounded-xl border bg-background p-3 transition-colors hover:bg-muted">
             <div>
               <p className="text-sm font-medium">Home Service</p>
-              <p className="text-xs text-muted-foreground">Masseuse comes to you</p>
+              <p className="text-xs text-muted-foreground">Model comes to you</p>
             </div>
             <div
               onClick={() => toggle("homeService")}

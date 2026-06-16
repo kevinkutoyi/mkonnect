@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth }         from "@/lib/auth";
 import { prisma }       from "@/lib/prisma";
-import { tierOrderBy }           from "@/lib/tier-sort";
+import { tierOrderBy } from "@/lib/tier-sort";
 
 export async function GET() {
   const session = await auth();
@@ -24,6 +24,7 @@ export async function GET() {
     },
   });
 
+  // Filter approved+active profiles in JS (Prisma doesn't support `where` on singular relations)
   return NextResponse.json(
     favs.filter((f) => f.profile?.status === "APPROVED" && f.profile?.listingActive)
   );

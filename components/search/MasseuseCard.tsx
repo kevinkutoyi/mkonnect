@@ -62,7 +62,7 @@ export function MasseuseCard({ masseuse, priority = false }: Props) {
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10">
       {/* ── Photo ─────────────────────────────────────────────── */}
-      <Link href={`/masseuse/${masseuse.slug}`} className="relative block h-56 shrink-0 bg-muted">
+      <Link href={`/model/${masseuse.slug}`} className="relative block h-56 shrink-0 bg-muted">
         {coverPhoto ? (
           <Image
             src={coverPhoto.url}
@@ -176,7 +176,7 @@ export function MasseuseCard({ masseuse, priority = false }: Props) {
         {/* CTA */}
         <div className="mt-auto pt-1 flex gap-2">
           <Link
-            href={`/masseuse/${masseuse.slug}`}
+            href={`/model/${masseuse.slug}`}
             className="flex-1 rounded-xl border px-4 py-2.5 text-center text-sm font-semibold transition-colors hover:bg-muted"
           >
             View Profile

@@ -141,7 +141,7 @@ export default function AdminReviewsPage() {
                   <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>
                       <span className="font-medium text-foreground">For:</span>{" "}
-                      <a href={`/masseuse/${review.profile.slug}`} target="_blank"
+                      <a href={`/model/${review.profile.slug}`} target="_blank"
                          className="underline hover:text-primary">
                         {review.profile.user.name}
                       </a>

@@ -1,6 +1,6 @@
 "use client";
 // app/(auth)/auth/reset-password/page.tsx
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -10,7 +10,7 @@ import { ResetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/
 
 type PageState = "form" | "success" | "invalid";
 
-function ResetPasswordPageContent() {
+export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -179,7 +179,4 @@ function ResetPasswordPageContent() {
       </form>
     </div>
   );
-}
-export default function ResetPasswordPage() {
-  return <Suspense><ResetPasswordPageContent /></Suspense>;
 }

@@ -12,35 +12,35 @@ const inter = Inter({
   preload: true,
 });
 
-const BASE_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),   // required for absolute OG image URLs
   title: {
-    default: "modelsraha — Find Professional Masseuses in Kenya",
-    template: "%s | modelsraha",
+    default: "mconnect — Find Professional Models in Kenya",
+    template: "%s | mconnect",
   },
   description:
-    "Discover and book professional massage services across Kenya. Browse verified masseuses in Nairobi, Mombasa, Kisumu and more.",
-  keywords: ["massage Kenya", "masseuse Nairobi", "massage services", "spa Kenya", "wellness Kenya", "body massage Nairobi", "massage booking Kenya"],
+    "Discover and book professional massage services across Kenya. Browse verified models in Nairobi, Mombasa, Kisumu and more.",
+  keywords: ["massage Kenya", "model Nairobi", "massage services", "spa Kenya", "wellness Kenya", "body massage Nairobi", "massage booking Kenya"],
   openGraph: {
     type:     "website",
     locale:   "en_KE",
     url:      BASE_URL,
-    siteName: "modelsraha",
+    siteName: "mconnect",
     images: [
       {
         url:    "/og-default.jpg",   // place a 1200×630 image in /public
         width:  1200,
         height: 630,
-        alt:    "modelsraha — Professional Massage Services in Kenya",
+        alt:    "mconnect — Professional Massage Services in Kenya",
       },
     ],
   },
   twitter: {
     card:    "summary_large_image",
-    site:    "@modelsrahake",
-    creator: "@modelsrahake",
+    site:    "@mconnectke",
+    creator: "@mconnectke",
   },
   robots: {
     index:               true,
@@ -65,11 +65,11 @@ export const metadata: Metadata = {
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type":    "Organization",
-  name:       "modelsraha",
+  name:       "mconnect",
   url:        BASE_URL,
   logo:       `${BASE_URL}/logo.png`,
   sameAs: [
-    "https://twitter.com/modelsrahake",
+    "https://twitter.com/mconnectke",
     // add Facebook, Instagram URLs here
   ],
   contactPoint: {

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link         from "next/link";
 import {
   LayoutDashboard, Users, ShieldCheck, CreditCard,
-  Star, Tag, MapPin, Bell,
+  Star, Tag, MapPin, Banknote,
 } from "lucide-react";
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/masseuses", label: "Profiles",    icon: ShieldCheck     },
   { href: "/admin/reviews",   label: "Reviews",     icon: Star            },
   { href: "/admin/payments",  label: "Payments",    icon: CreditCard      },
+  { href: "/admin/payouts",   label: "Payouts",     icon: Banknote        },
   { href: "/admin/users",     label: "Users",       icon: Users           },
   { href: "/admin/tiers",     label: "Tiers",       icon: Tag             },
 ];
@@ -26,7 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="hidden w-60 shrink-0 flex-col border-r bg-card lg:flex">
         <div className="flex h-16 items-center gap-2 border-b px-5">
           <MapPin className="h-4 w-4 text-primary" />
-          <span className="font-bold tracking-tight">modelsraha admin</span>
+          <span className="font-bold tracking-tight">mconnect admin</span>
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
           {NAV.map(({ href, label, icon: Icon }) => (

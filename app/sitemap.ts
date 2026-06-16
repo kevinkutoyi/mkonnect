@@ -2,7 +2,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
-const BASE = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
+const BASE = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -15,10 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
     prisma.city.findMany({
       where:  { isMajor: true },
-      select: { slug: true },
+      select: { slug: true, updatedAt: true },
     }),
     prisma.county.findMany({
-      select: { slug: true },
+      select: { slug: true, updatedAt: true },
     }),
     prisma.category.findMany({
       where:  { isActive: true },
@@ -44,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ── City search pages ───────────────────────────────────────────────────
     ...cities.map((c) => ({
       url:             `${BASE}/search?location=${c.slug}`,
-      lastModified:    now,
+      lastModified:    c.updatedAt ?? now,
       changeFrequency: "daily" as const,
       priority:        0.85,
     })),
@@ -52,7 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ── County search pages ─────────────────────────────────────────────────
     ...counties.map((c) => ({
       url:             `${BASE}/search?county=${c.slug}`,
-      lastModified:    now,
+      lastModified:    c.updatedAt ?? now,
       changeFrequency: "daily" as const,
       priority:        0.75,
     })),
@@ -65,9 +65,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority:        0.75,
     })),
 
-    // ── Individual masseuse profiles ────────────────────────────────────────
+    // ── Individual model profiles ────────────────────────────────────────
     ...masseuses.map((m) => ({
-      url:             `${BASE}/masseuse/${m.slug}`,
+      url:             `${BASE}/model/${m.slug}`,
       lastModified:    m.updatedAt,
       changeFrequency: "weekly" as const,
       priority:        0.7,

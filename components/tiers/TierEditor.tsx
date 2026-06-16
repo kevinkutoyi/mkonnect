@@ -268,7 +268,7 @@ export function TierEditor({ tier, onUpdated }: TierEditorProps) {
           {/* Active toggle */}
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register("isActive")} className="rounded" />
-            Tier is active (visible to masseuses)
+            Tier is active (visible to models)
           </label>
         </form>
       )}

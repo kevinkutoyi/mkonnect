@@ -2,14 +2,17 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, User, ListChecks, CalendarDays, DollarSign, LogOut, MapPin, Tag } from "lucide-react";
+import { LayoutDashboard, User, ListChecks, CalendarDays, DollarSign, LogOut, MapPin, Tag, Banknote } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard",          label: "Overview",     icon: LayoutDashboard },
-  { href: "/dashboard/onboarding",  label: "My Profile",   icon: User            },
+  { href: "/dashboard/profile",  label: "My Profile",   icon: User            },
   { href: "/dashboard/services", label: "Services",     icon: ListChecks      },
   { href: "/dashboard/listing",  label: "Listing Plan", icon: Tag             },
+  { href: "/dashboard/bookings", label: "Bookings",     icon: CalendarDays    },
+  { href: "/dashboard/earnings", label: "Earnings",      icon: DollarSign      },
+  { href: "/dashboard/payouts",  label: "Payouts",       icon: Banknote        },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex h-16 items-center border-b px-4">
           <Link href="/" className="flex items-center gap-1.5 font-bold text-lg">
             <MapPin className="h-4 w-4 text-primary" />
-            models<span className="text-primary">raha</span>
+            m<span className="text-primary">connect</span>
           </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">

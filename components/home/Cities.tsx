@@ -37,7 +37,7 @@ export function Cities({ cities }: Props) {
           </p>
           <h2 className="text-3xl font-extrabold tracking-tight">Browse by City</h2>
           <p className="mt-1 text-muted-foreground">
-            Professional masseuses available across Kenya
+            Professional models available across Kenya
           </p>
         </div>
 

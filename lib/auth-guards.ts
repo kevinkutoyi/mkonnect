@@ -33,11 +33,11 @@ export async function assertRole(allowedRoles: Role[]) {
     redirect("/auth/login");
   }
 
-  if (!allowedRoles.includes(session!.user.role)) {
+  if (!allowedRoles.includes(session.user.role)) {
     redirect("/unauthorized");
   }
 
-  return session!;
+  return session;
 }
 
 // ─── Server Component guard — assert a permission ────────────────────────────
@@ -53,7 +53,7 @@ export async function assertPermission(permission: Permission) {
 
   if (!session) redirect("/auth/login");
 
-  if (!hasPermission(session!.user.role, permission)) {
+  if (!hasPermission(session.user.role, permission)) {
     redirect("/unauthorized");
   }
 
@@ -67,7 +67,7 @@ export async function assertEmailVerified() {
 
   if (!session) redirect("/auth/login");
 
-  if (!session!.user.emailVerified) {
+  if (!session.user.emailVerified) {
     redirect("/auth/verify-request");
   }
 
@@ -92,7 +92,7 @@ export async function apiRequireRole(allowedRoles: Role[]) {
   const { session, error } = await apiRequireAuth();
   if (error || !session) return { session: null, error };
 
-  if (!allowedRoles.includes(session!.user.role)) {
+  if (!allowedRoles.includes(session.user.role)) {
     return {
       session: null,
       error: NextResponse.json(

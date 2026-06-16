@@ -10,7 +10,7 @@ import { tierOrderBy }     from "@/lib/tier-sort";
 import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import type { Metadata }   from "next";
 
-const BASE_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
 
 interface SearchPageProps {
   searchParams: {
@@ -58,7 +58,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 
   const titleParts: string[] = [];
   if (categoryName) titleParts.push(categoryName);
-  titleParts.push("Masseuses");
+  titleParts.push("Models");
   if (locationName) titleParts.push(`in ${locationName}`);
 
   const title       = titleParts.join(" ");
@@ -67,7 +67,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
     categoryName ?? "massage",
     "services",
     locationName ? `in ${locationName}` : "across Kenya",
-    "— verified masseuses, instant booking.",
+    "— verified models, instant booking.",
   ].join(" ");
 
   // Build canonical URL from searchParams
@@ -169,12 +169,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const itemListSchema = masseuses.length > 0 ? {
     "@context":      "https://schema.org",
     "@type":         "ItemList",
-    name:            locationLabel ? `Masseuses in ${locationLabel}` : "Browse Masseuses",
+    name:            locationLabel ? `Models in ${locationLabel}` : "Browse Models",
     numberOfItems:   total,
     itemListElement: masseuses.map((m: any, i) => ({
       "@type":    "ListItem",
       position:   (page - 1) * pageSize + i + 1,
-      url:        `${BASE_URL}/masseuse/${m.slug}`,
+      url:        `${BASE_URL}/model/${m.slug}`,
       name:       m.user.name,
     })),
   } : null;
@@ -192,7 +192,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="mb-4 flex items-center justify-between md:hidden">
         <div>
           <h1 className="text-lg font-bold">
-            {locationLabel ? `Masseuses in ${locationLabel}` : "Browse Masseuses"}
+            {locationLabel ? `Models in ${locationLabel}` : "Browse Models"}
           </h1>
           <p className="text-xs text-muted-foreground">{total} found</p>
         </div>
@@ -212,7 +212,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <div className="flex-1 min-w-0">
           <div className="mb-5 hidden items-center justify-between md:flex">
             <h1 className="text-xl font-bold">
-              {locationLabel ? `Masseuses in ${locationLabel}` : "Browse Masseuses"}
+              {locationLabel ? `Models in ${locationLabel}` : "Browse Models"}
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({total} found)
               </span>

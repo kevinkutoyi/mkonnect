@@ -21,7 +21,7 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1.5 font-bold text-xl">
           <MapPin className="h-5 w-5 text-primary" />
-          models<span className="text-primary">raha</span>
+          m<span className="text-primary">connect</span>
         </Link>
 
         {/* Desktop nav */}
@@ -58,7 +58,7 @@ export function Navbar() {
                 Log in
               </Link>
               <Link
-                href="/auth/register"
+                href="/register"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Sign up
@@ -95,7 +95,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
-                <Link href="/auth/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
+                <Link href="/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
               </>
             )}
             <ThemeToggle />

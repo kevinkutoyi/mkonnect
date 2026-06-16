@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ServicesManager } from "@/components/services/ServicesManager";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "My Services — modelsraha" };
+export const metadata: Metadata = { title: "My Services — mconnect" };
 
 export default async function ServicesPage() {
   const session = await auth();

@@ -36,12 +36,12 @@ export function Hero({ locations }: HeroProps) {
         <h1 className="text-5xl font-extrabold tracking-tight text-foreground md:text-7xl">
           Find Your Perfect<br />
           <span className="bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
-            Masseuse
+            Model
           </span>
         </h1>
 
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-          Browse verified, professional masseuses across Kenya.
+          Browse verified, professional models across Kenya.
           Book in minutes, pay securely via M-Pesa.
         </p>
 

@@ -3,9 +3,9 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM ?? "noreply@modelsraha.com";
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.co.ke";
-const APP_NAME = "modelsraha";
+const FROM = process.env.EMAIL_FROM ?? "noreply@mconnect.co.ke";
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const APP_NAME = "mconnect";
 
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
 function emailWrapper(content: string): string {
@@ -164,12 +164,12 @@ export async function sendWelcomeEmail(params: {
   const cta =
     params.role === "MASSEUSE"
       ? { label: "Set Up Your Profile", href: `${APP_URL}/dashboard/profile` }
-      : { label: "Find a Masseuse", href: `${APP_URL}/search` };
+      : { label: "Find a Model", href: `${APP_URL}/search` };
 
   const body =
     params.role === "MASSEUSE"
       ? "Your account is verified. Complete your profile to start receiving bookings — it only takes a few minutes."
-      : "Your account is verified. Start browsing professional masseuses across Kenya and book your first session.";
+      : "Your account is verified. Start browsing professional models across Kenya and book your first session.";
 
   const html = emailWrapper(`
     <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
@@ -262,7 +262,7 @@ export async function sendListingActivatedEmail(params: {
   slug:     string;
   tierName: string;
 }) {
-  const profileUrl = `${APP_URL}/masseuse/${params.slug}`;
+  const profileUrl = `${APP_URL}/model/${params.slug}`;
   const dashUrl    = `${APP_URL}/dashboard`;
 
   const html = emailWrapper(`

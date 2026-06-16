@@ -19,7 +19,7 @@ export function FeaturedMasseuses({ masseuses }: Props) {
             <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">
               Top Rated
             </p>
-            <h2 className="text-3xl font-extrabold tracking-tight">Featured Masseuses</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight">Featured Models</h2>
             <p className="mt-1 text-muted-foreground">
               Handpicked, verified professionals ready to book
             </p>
@@ -44,7 +44,7 @@ export function FeaturedMasseuses({ masseuses }: Props) {
             href="/search"
             className="inline-flex items-center gap-2 rounded-xl border px-6 py-3 text-sm font-semibold hover:bg-muted"
           >
-            View all masseuses <ArrowRight className="h-4 w-4" />
+            View all models <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>

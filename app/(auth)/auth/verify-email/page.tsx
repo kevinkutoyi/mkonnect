@@ -3,9 +3,9 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, MailCheck, Loader2 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 
-function VerifyEmailPageContent() {
+export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const success = searchParams.get("success");
   const error = searchParams.get("error");
@@ -35,7 +35,7 @@ function VerifyEmailPageContent() {
         <div>
           <h1 className="text-2xl font-bold">Email verified!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your email address has been confirmed. You're all set — welcome to modelsraha!
+            Your email address has been confirmed. You're all set — welcome to mconnect!
           </p>
         </div>
         <Link
@@ -115,7 +115,4 @@ function VerifyEmailPageContent() {
       </Link>
     </div>
   );
-}
-export default function VerifyEmailPage() {
-  return <Suspense><VerifyEmailPageContent /></Suspense>;
 }

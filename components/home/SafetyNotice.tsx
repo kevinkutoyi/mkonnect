@@ -6,7 +6,7 @@ const pillars = [
     Icon: BadgeCheck,
     title: "Verified Profiles",
     description:
-      "Every masseuse is manually reviewed by our team. We check credentials, ID, and professional background before approval.",
+      "Every model is manually reviewed by our team. We check credentials, ID, and professional background before approval.",
   },
   {
     Icon: Lock,
@@ -24,7 +24,7 @@ const pillars = [
     Icon: ShieldCheck,
     title: "Safe Bookings",
     description:
-      "We have a clear Code of Conduct for all masseuses. Any violation is reported and handled by our safety team.",
+      "We have a clear Code of Conduct for all models. Any violation is reported and handled by our safety team.",
   },
 ];
 
@@ -43,9 +43,9 @@ export function SafetyNotice() {
               Built on Trust &amp; Transparency
             </h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              modelsraha is a professional marketplace. We work only with verified, trained
+              mconnect is a professional marketplace. We work only with verified, trained
               massage therapists. Our platform enforces a strict zero-tolerance policy
-              against inappropriate conduct — keeping every booking safe for both clients and masseuses.
+              against inappropriate conduct — keeping every booking safe for both clients and models.
             </p>
           </div>
         </div>

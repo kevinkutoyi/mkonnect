@@ -108,6 +108,14 @@ enum ServiceDurationUnit {
   HOURS
 }
 
+enum PayoutStatus {
+  PENDING     // queued, not yet sent
+  PROCESSING  // B2C request accepted by Daraja
+  COMPLETED   // Daraja confirmed receipt
+  FAILED      // Daraja returned error or timed out
+  CANCELLED   // admin cancelled
+}
+
 enum ReviewStatus {
   VISIBLE
   HIDDEN      // hidden by admin
@@ -255,7 +263,8 @@ model User {
   emailVerifTokens       EmailVerificationToken[]
 
   favorites         Favorite[]
-  notifications    Notification[]
+  notifications     Notification[]
+  payouts           Payout[]
 
   // Contact system
   conversations     Conversation[]    @relation("ClientConversations")
@@ -356,6 +365,9 @@ model MasseuseProfile {
   viewCount       Int      @default(0)
   profileScore    Float    @default(0) // internal ranking score
 
+  // Payout details
+  payoutPhone     String?   // M-Pesa number for weekly payouts (format: 2547XXXXXXXX)
+
   // Payment-gated public visibility
   // true only when: status=APPROVED AND an ACTIVE ProfileSubscription exists
   // Set by: subscription activation callback, expiry cron, admin override
@@ -384,6 +396,7 @@ model MasseuseProfile {
   conversations     Conversation[]
   contactEvents     ContactEvent[]
   favorites         Favorite[]
+  payouts           Payout[]
 
   @@index([status])
   @@index([listingActive])
@@ -523,6 +536,7 @@ model Booking {
   cancelledBy  String?       // userId who cancelled
   cancelReason String?       @db.Text
   completedAt  DateTime?
+  payoutId     String?       // set when this booking is included in a Payout
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -531,6 +545,7 @@ model Booking {
   service  Service         @relation(fields: [serviceId], references: [id])
   payment  Payment?
   review   Review?
+  payout   Payout?         @relation(fields: [payoutId], references: [id])
 
   @@index([clientId])
   @@index([profileId])
@@ -825,10 +840,14 @@ model Favorite {
   @@map("favorites")
 }
 
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String
+  type      String   // payment_confirmed | listing_activated | listing_expiring | listing_rejected
   title     String
   message   String   @db.Text
   read      Boolean  @default(false)
@@ -841,4 +860,56 @@ model Notification {
   @@index([userId, read])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+// =============================================================================
+// PAYOUTS
+// Weekly M-Pesa disbursements to masseuses via Safaricom Daraja B2C
+// =============================================================================
+
+model Payout {
+  id          String       @id @default(cuid())
+  profileId   String
+  userId      String
+
+  // Amounts
+  grossAmount Decimal      @db.Decimal(10, 2)  // sum of completed bookings
+  commission  Decimal      @db.Decimal(10, 2)  // platform fee (e.g. 10%)
+  netAmount   Decimal      @db.Decimal(10, 2)  // grossAmount - commission → sent to masseuse
+
+  // Recipient
+  mpesaPhone  String       // format: 2547XXXXXXXX
+
+  // Status
+  status      PayoutStatus @default(PENDING)
+
+  // Daraja B2C tracking
+  darajaConversationId    String?  @unique  // returned by Daraja on initiation
+  darajaOriginatorId      String?  @unique  // our own correlation ID
+  darajaResultCode        Int?
+  darajaResultDesc        String?
+  mpesaReceiptNumber      String?  // transaction receipt from Daraja callback
+
+  // Period this payout covers
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Admin / audit
+  processedAt   DateTime?
+  failureReason String?   @db.Text
+  retryOfId     String?   // if this is a retry of a failed payout
+  notes         String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile  MasseuseProfile @relation(fields: [profileId], references: [id])
+  user     User            @relation(fields: [userId],    references: [id])
+  bookings Booking[]       // bookings included in this payout
+
+  @@index([profileId])
+  @@index([status])
+  @@index([periodStart])
+  @@index([createdAt])
+  @@map("payouts")
 }

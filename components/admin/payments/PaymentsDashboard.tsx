@@ -264,7 +264,7 @@ export function PaymentsDashboard({ initialStats }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Masseuse</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Model</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Plan</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Amount</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -345,7 +345,7 @@ export function PaymentsDashboard({ initialStats }: Props) {
                         </span>
                       </div>
                       <a
-                        href={`/masseuse/${sub.profile.slug}`}
+                        href={`/model/${sub.profile.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-0.5 flex items-center gap-0.5 text-[10px] text-primary hover:underline"

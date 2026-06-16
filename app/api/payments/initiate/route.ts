@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
     include: {
       service: true,
       client: true,
-      payment: { select: { status: true } },
     },
   });
 
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
     merchantReference,
     amount: Number(booking.totalAmount),
     currency: "KES",
-    description: `${booking.service.name} - modelsraha`,
+    description: `${booking.service.name} - mconnect`,
     callbackUrl: `${process.env.NEXTAUTH_URL}/api/payments/callback`,
     ipnId,
     billingEmail: booking.client.email,

@@ -11,8 +11,8 @@ import { PUBLIC_PROFILE_FILTER } from "@/lib/profile-activation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Favorites — modelsraha",
-  description: "Your saved masseuse profiles.",
+  title: "My Favorites — mconnect",
+  description: "Your saved model profiles.",
 };
 
 export default async function FavoritesPage() {
@@ -66,7 +66,7 @@ export default async function FavoritesPage() {
             href="/search"
             className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            Browse masseuses
+            Browse models
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -81,7 +81,7 @@ export default async function FavoritesPage() {
             return (
               <div key={favId} className="group relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
                 {/* Cover photo */}
-                <Link href={`/masseuse/${profile.slug}`}>
+                <Link href={`/model/${profile.slug}`}>
                   <div className="relative h-44 w-full bg-gradient-to-br from-primary/20 to-background">
                     {photo && (
                       <Image
@@ -145,7 +145,7 @@ export default async function FavoritesPage() {
                       </p>
                     ) : <span />}
                     <Link
-                      href={`/masseuse/${profile.slug}`}
+                      href={`/model/${profile.slug}`}
                       className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90"
                     >
                       View <ArrowRight className="h-3 w-3" />

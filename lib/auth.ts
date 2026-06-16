@@ -2,7 +2,7 @@
 // NextAuth v5 (Auth.js) configuration
 // JWT strategy — role, id, emailVerified embedded in token
 
-import NextAuth, { type DefaultSession, type Session } from "next-auth";
+import NextAuth, { type DefaultSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -29,7 +29,13 @@ declare module "next-auth" {
   }
 }
 
-// JWT fields added via token index-signature; cast explicitly in session callback
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: Role;
+    emailVerified: Date | null;
+  }
+}
 
 // ─── Auth config ──────────────────────────────────────────────────────────────
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -40,8 +46,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
 
   pages: {
-    signIn: "/login",
-    error: "/login",
+    signIn: "/auth/login",
+    error: "/auth/login",
   },
 
   providers: [
@@ -80,6 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             id: true,
             email: true,
             name: true,
+            image: true,
             password: true,
             role: true,
             emailVerified: true,
@@ -122,6 +129,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
+          image: user.image,
           role: user.role,
           emailVerified: user.emailVerified,
         };
@@ -150,7 +158,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const now = Math.floor(Date.now() / 1000);
       if (token.id && (!token.lastRefresh || now - (token.lastRefresh as number) > REFRESH_INTERVAL)) {
         const fresh = await prisma.user.findUnique({
-          where: { id: token.id as string },
+          where: { id: token.id },
           select: { role: true, isActive: true, isBanned: true, emailVerified: true },
         });
         if (!fresh || !fresh.isActive || fresh.isBanned) {
@@ -168,9 +176,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // ── Session: expose token fields to the client ────────────────────────────
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
-        session.user.emailVerified = token.emailVerified as Date | null;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.emailVerified = token.emailVerified;
       }
       return session;
     },
@@ -211,7 +219,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function requireRole(
   allowedRoles: Role[],
   redirectTo = "/login"
-): Promise<Session> {
+): Promise<NonNullable<Awaited<ReturnType<typeof auth>>>> {
   const { redirect } = await import("next/navigation");
   const session = await auth();
 
@@ -219,11 +227,11 @@ export async function requireRole(
     redirect(`${redirectTo}?callbackUrl=${encodeURIComponent(redirectTo)}`);
   }
 
-  if (!allowedRoles.includes(session!.user.role)) {
+  if (!allowedRoles.includes(session.user.role)) {
     redirect("/unauthorized");
   }
 
-  return session!;
+  return session;
 }
 
 // ─── Permission matrix ────────────────────────────────────────────────────────

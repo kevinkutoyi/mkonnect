@@ -5,7 +5,7 @@ const steps = [
   {
     step: "01",
     Icon: Search,
-    title: "Find Your Masseuse",
+    title: "Find Your Model",
     description:
       "Search by city, service type, or price. Filter by rating and availability. Every profile is verified before going live.",
   },

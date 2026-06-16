@@ -35,7 +35,7 @@ export function Step2Location({ form, counties }: Props) {
       <div>
         <h2 className="text-xl font-bold">Your location</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Clients will search for masseuses by county and town.
+          Clients will search for models by county and town.
         </p>
       </div>
 
@@ -89,7 +89,7 @@ export function Step2Location({ form, counties }: Props) {
             { field: "mobileService", icon: "🏠", label: "Home / Hotel visits", sub: "You travel to the client" },
             { field: "spaService",    icon: "🛁", label: "My own space",         sub: "Client comes to you" },
           ].map(({ field, icon, label, sub }) => {
-            const checked = watch(field as any) as boolean;
+            const checked = watch(field as keyof OnboardingInput) as boolean;
             return (
               <label
                 key={field}
@@ -99,7 +99,7 @@ export function Step2Location({ form, counties }: Props) {
               >
                 <input
                   type="checkbox"
-                  {...register(field as any)}
+                  {...register(field as keyof OnboardingInput)}
                   className="sr-only"
                 />
                 <span className="text-2xl">{icon}</span>

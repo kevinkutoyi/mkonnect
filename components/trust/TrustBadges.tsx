@@ -39,7 +39,7 @@ export function TrustBadges({
     {
       show:    isVerified,
       label:   verificationLevel === "FULLY_VERIFIED" ? "Fully Verified" : "ID Verified",
-      tooltip: "Identity verified by modelsraha admin",
+      tooltip: "Identity verified by mconnect admin",
       icon:    BadgeCheck,
       cls:     "bg-primary/10 text-primary border-primary/20",
     },
@@ -91,19 +91,22 @@ export function TrustBadgeIcons({
   return (
     <div className="flex gap-1">
       {isVerified && (
-        <span title="Identity verified">
-          <BadgeCheck className="h-4 w-4 text-primary drop-shadow" />
-        </span>
+        <BadgeCheck
+          className="h-4 w-4 text-primary drop-shadow"
+          title="Identity verified"
+        />
       )}
       {listingActive && (
-        <span title="Active listing">
-          <ShieldCheck className="h-4 w-4 text-emerald-500 drop-shadow" />
-        </span>
+        <ShieldCheck
+          className="h-4 w-4 text-emerald-500 drop-shadow"
+          title="Active listing"
+        />
       )}
       {listingActive && (
-        <span title="Payment verified">
-          <CreditCard className="h-4 w-4 text-sky-400 drop-shadow" />
-        </span>
+        <CreditCard
+          className="h-4 w-4 text-sky-400 drop-shadow"
+          title="Payment verified"
+        />
       )}
     </div>
   );
