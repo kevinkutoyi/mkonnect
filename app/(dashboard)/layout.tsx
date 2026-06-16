@@ -10,8 +10,6 @@ const navItems = [
   { href: "/dashboard/onboarding",  label: "My Profile",   icon: User            },
   { href: "/dashboard/services", label: "Services",     icon: ListChecks      },
   { href: "/dashboard/listing",  label: "Listing Plan", icon: Tag             },
-  { href: "/dashboard/bookings", label: "Bookings",     icon: CalendarDays    },
-  { href: "/dashboard/earnings", label: "Earnings",     icon: DollarSign      },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -51,7 +51,6 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
         form.append("timestamp", timestamp);
         form.append("signature", signature);
         form.append("folder", folder);
-        form.append("transformation", "c_fill,g_face,w_400,h_400,q_auto,f_auto");
 
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = (e) => {

@@ -42,7 +42,7 @@ export function Footer() {
             <h3 className="font-semibold text-sm mb-3">For Masseuses</h3>
             <ul className="space-y-2">
               {[
-                { label: "Join modelsraha", href: "/register" },
+                { label: "Join modelsraha", href: "/auth/register" },
                 { label: "Dashboard",    href: "/dashboard" },
               ].map(({ label, href }) => (
                 <li key={label}>

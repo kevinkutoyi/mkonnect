@@ -1,7 +1,7 @@
 // app/(main)/masseuse/[slug]/page.tsx
 import { notFound }        from "next/navigation";
 import type { Metadata }   from "next";
-import dynamic             from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { Suspense }        from "react";
 import { prisma }          from "@/lib/prisma";
 import { auth }            from "@/lib/auth";
@@ -17,17 +17,17 @@ import type { TierName }   from "@prisma/client";
 
 // ── Lazy-load below-the-fold heavy components ─────────────────────────────────
 // PhotoGallery uses lightbox JS; ReviewForm is client-only — both safely deferred
-const PhotoGallery = dynamic(
+const PhotoGallery = dynamicImport(
   () => import("@/components/profile/PhotoGallery").then((m) => m.PhotoGallery),
   { loading: () => <div className="h-48 animate-pulse rounded-xl bg-muted" /> }
 );
-const ReviewForm = dynamic(
+const ReviewForm = dynamicImport(
   () => import("@/components/reviews/ReviewForm").then((m) => m.ReviewForm),
   { loading: () => <div className="h-32 animate-pulse rounded-xl bg-muted" /> }
 );
 
 // ── ISR — revalidate profile pages every hour ─────────────────────────────────
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 interface Props { params: { slug: string } }
 
