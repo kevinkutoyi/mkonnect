@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     await prisma.service.deleteMany({ where: { profileId: profile.id } });
     if (d.services.length > 0) {
       await prisma.service.createMany({
-        data: d.services.map((s, i) => ({
+        data: d.services.map((s: any, i) => ({
           profileId:      profile.id,
           categoryId:     s.categoryId,
           name:           s.name,
