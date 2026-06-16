@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface FieldProps {
   label: string;
-  error?: string;
+  error?: string | unknown;
   hint?: string;
   required?: boolean;
   className?: string;
