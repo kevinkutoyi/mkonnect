@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Compute price range
-    const prices = d.services.map((s) => s.price);
+    const prices = d.services.map((s: any) => s.price);
     await prisma.masseuseProfile.update({
       where: { id: profile.id },
       data: {
