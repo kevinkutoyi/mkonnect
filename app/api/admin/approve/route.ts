@@ -42,35 +42,13 @@ const ACTIVATION_REASON_MAP = {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
-    // Notify user of suspend/ban/pending actions
-  if (["SUSPEND","BAN","PENDING"].includes(action)) {
-    notifyListingRejected({
-      userId:  profile.user.id,
-      email:   profile.user.email,
-      name:    profile.user.name,
-      action:  action as "SUSPEND" | "BAN" | "PENDING",
-      reason,
-    }).catch(console.error);
-  }
-
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body   = await req.json();
   const parsed = ApproveSchema.safeParse(body);
   if (!parsed.success) {
-    // Notify user of suspend/ban/pending actions
-  if (["SUSPEND","BAN","PENDING"].includes(action)) {
-    notifyListingRejected({
-      userId:  profile.user.id,
-      email:   profile.user.email,
-      name:    profile.user.name,
-      action:  action as "SUSPEND" | "BAN" | "PENDING",
-      reason,
-    }).catch(console.error);
-  }
-
-  return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const { profileId, action, reason } = parsed.data;
