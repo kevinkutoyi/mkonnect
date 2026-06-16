@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard",          label: "Overview",     icon: LayoutDashboard },
-  { href: "/dashboard/profile",  label: "My Profile",   icon: User            },
+  { href: "/dashboard/onboarding",  label: "My Profile",   icon: User            },
   { href: "/dashboard/services", label: "Services",     icon: ListChecks      },
   { href: "/dashboard/listing",  label: "Listing Plan", icon: Tag             },
   { href: "/dashboard/bookings", label: "Bookings",     icon: CalendarDays    },

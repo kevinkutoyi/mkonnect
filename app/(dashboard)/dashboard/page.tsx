@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       <div className="rounded-xl border bg-card p-8 text-center">
         <p className="font-semibold">Complete your profile to get started</p>
         <a
-          href="/dashboard/profile"
+          href="/dashboard/onboarding"
           className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           Set Up Profile
