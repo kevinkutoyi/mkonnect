@@ -21,7 +21,7 @@ export function Field({ label, error, hint, required, className, children }: Fie
       </label>
       {children}
       {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="text-xs text-destructive">{error as string}</p>}
+      {!!error && <p className="text-xs text-destructive">{String(error)}</p>}
     </div>
   );
 }
