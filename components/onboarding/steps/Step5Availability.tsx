@@ -152,7 +152,7 @@ export function Step5Availability({ form }: Props) {
           />
         </div>
         {errors.availableFrom && (
-          <p className="text-xs text-destructive">{errors.availableFrom.message}</p>
+          <p className="text-xs text-destructive">{String(errors.availableFrom.message ?? "")}</p>
         )}
       </Field>
 
