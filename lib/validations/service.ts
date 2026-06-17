@@ -21,8 +21,7 @@ export type StudioLocation = z.infer<typeof StudioLocationSchema>;
 export const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360] as const;
 
 // ─── Create service ───────────────────────────────────────────────────────────
-export const CreateServiceSchema = z
-  .object({
+const ServiceBaseSchema = z.object({
     categoryId: z
       .number({ required_error: "Select a service category" })
       .int()
@@ -73,7 +72,9 @@ export const CreateServiceSchema = z
 
     isActive:  z.boolean().default(true),
     sortOrder: z.number().int().min(0).default(0),
-  })
+});
+
+export const CreateServiceSchema = ServiceBaseSchema
   .refine(
     (d) => d.homeService || d.hotelVisit || d.studioService,
     {
@@ -104,9 +105,7 @@ export const CreateServiceSchema = z
   );
 
 // ─── Update service (all fields optional) ─────────────────────────────────────
-export const UpdateServiceSchema = CreateServiceSchema.partial().extend({
-  // When updating delivery mode, re-validate studio location if studioService is being set
-});
+export const UpdateServiceSchema = ServiceBaseSchema.partial();
 
 // ─── Reorder services ─────────────────────────────────────────────────────────
 export const ReorderServicesSchema = z.object({
