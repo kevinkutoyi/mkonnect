@@ -32,7 +32,7 @@ export function Step5Availability({ form }: Props) {
   const to = watch("availableTo");
 
   // Check at least one day selected for the error
-  const anyDay = DAYS.some((d) => watch(d.field) as boolean);
+  const anyDay = DAYS.some((d) => Boolean(watch(d.field)));
   const dayError = !anyDay && (errors as any).availableMon?.message;
 
   // Weekday / weekend shortcuts
@@ -162,7 +162,7 @@ export function Step5Availability({ form }: Props) {
           <p className="font-semibold">Your schedule preview</p>
           <p className="text-muted-foreground">
             <span className="font-medium text-foreground">
-              {DAYS.filter((d) => watch(d.field) as boolean).map((d) => d.short).join(", ")}
+              {DAYS.filter((d) => Boolean(watch(d.field))).map((d) => d.short).join(", ")}
             </span>
             {" · "}
             {from} – {to}
