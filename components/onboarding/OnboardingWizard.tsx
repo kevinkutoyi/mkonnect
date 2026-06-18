@@ -191,9 +191,9 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
           <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold">Profile submitted!</h2>
+          <h2 className="text-2xl font-bold">Profile complete!</h2>
           <p className="mt-2 text-muted-foreground max-w-sm leading-relaxed">
-            Your profile is under review. We'll notify you by email once it's approved — usually within 24 hours.
+            Your profile is live. Subscribe to a listing plan from your dashboard to start appearing in search results.
           </p>
         </div>
         <button

@@ -4,23 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter }        from "next/navigation";
 import Image from "next/image";
 import {
-  CheckCircle2, XCircle, Ban, RotateCcw,
+  Ban, RotateCcw,
   MapPin, Calendar, Search, ExternalLink,
-  ChevronDown, Loader2, Eye,
+  Loader2, CheckCircle2,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
-type Status = "PENDING" | "APPROVED" | "SUSPENDED" | "BANNED";
+type Status = "APPROVED" | "SUSPENDED" | "BANNED";
 
 const TABS: { key: Status; label: string; color: string }[] = [
-  { key: "PENDING",   label: "Pending",   color: "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-700" },
-  { key: "APPROVED",  label: "Approved",  color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-700" },
+  { key: "APPROVED",  label: "Active",    color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-700" },
   { key: "SUSPENDED", label: "Suspended", color: "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-700" },
   { key: "BANNED",    label: "Banned",    color: "text-red-700 bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-700" },
 ];
 
 const STATUS_BADGE: Record<Status, string> = {
-  PENDING:   "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
   APPROVED:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
   SUSPENDED: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400",
   BANNED:    "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400",
@@ -205,22 +203,6 @@ function ProfileCard({
             </div>
           ) : (
             <>
-              {status !== "APPROVED" && (
-                <button
-                  onClick={() => onAction(profile.id, "APPROVE")}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-600 active:scale-95"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Approve
-                </button>
-              )}
-              {status === "PENDING" && (
-                <button
-                  onClick={() => onAction(profile.id, "PENDING")}
-                  className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold hover:bg-muted active:scale-95"
-                >
-                  <XCircle className="h-3.5 w-3.5" /> Reject
-                </button>
-              )}
               {status !== "SUSPENDED" && status !== "BANNED" && (
                 <button
                   onClick={() => setModal("suspend")}
@@ -278,13 +260,13 @@ function ProfileCard({
 export default function AdminMasseusesPage() {
   const searchParams = useSearchParams();
   const router       = useRouter();
-  const [tab,      setTab]      = useState<Status>((searchParams.get("status") as Status) ?? "PENDING");
+  const [tab,      setTab]      = useState<Status>((searchParams.get("status") as Status) ?? "APPROVED");
   const [profiles, setProfiles] = useState<any[]>([]);
   const [total,    setTotal]    = useState(0);
   const [search,   setSearch]   = useState("");
   const [loading,  setLoading]  = useState(true);
   const [acting,   setActing]   = useState<string | null>(null);
-  const [counts,   setCounts]   = useState<Record<Status, number>>({ PENDING: 0, APPROVED: 0, SUSPENDED: 0, BANNED: 0 });
+  const [counts,   setCounts]   = useState<Record<Status, number>>({ APPROVED: 0, SUSPENDED: 0, BANNED: 0 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -301,7 +283,7 @@ export default function AdminMasseusesPage() {
 
   // Load counts for badge numbers
   useEffect(() => {
-    (["PENDING","APPROVED","SUSPENDED","BANNED"] as Status[]).forEach(async (s) => {
+    (["APPROVED","SUSPENDED","BANNED"] as Status[]).forEach(async (s) => {
       const res  = await fetch(`/api/admin/masseuses?status=${s}&countOnly=1`);
       const data = await res.json();
       setCounts((prev) => ({ ...prev, [s]: Array.isArray(data) ? data.length : (data.total ?? 0) }));

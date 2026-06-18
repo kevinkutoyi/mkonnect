@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         availableSun:     d.availableSun,
         availableFrom:    d.availableFrom,
         availableTo:      d.availableTo,
-        status:           "PENDING",
+        status:           "APPROVED",
       },
       update: {
         bio:              d.bio,
@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
         availableSun:     d.availableSun,
         availableFrom:    d.availableFrom,
         availableTo:      d.availableTo,
-        status:           "PENDING",
       },
     });
 
@@ -123,7 +122,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "Profile submitted for review.", slug: profile.slug },
+      { message: "Profile saved.", slug: profile.slug },
       { status: 201 }
     );
   } catch (err) {
