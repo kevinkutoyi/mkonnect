@@ -90,37 +90,12 @@ export const Step3Schema = z.object({
 });
 
 // ─── Step 4 — Services ───────────────────────────────────────────────────────
-export const ServiceEntrySchema = z.object({
-  categoryId: z
-    .number({ required_error: "Category is required", invalid_type_error: "Select a category" })
-    .int()
-    .positive("Select a service category"),
-  name: z
-    .string()
-    .min(2, "Service name is required")
-    .max(100, "Service name too long"),
-  description: z.string().max(300, "Max 300 characters").optional(),
-  duration: z
-    .number({ required_error: "Duration is required", invalid_type_error: "Enter a duration" })
-    .int()
-    .min(15, "Minimum session is 15 minutes")
-    .max(480, "Maximum session is 8 hours"),
-  price: z
-    .number({ required_error: "Price is required", invalid_type_error: "Enter a price" })
-    .min(100, "Minimum price is KES 100")
-    .max(99999, "Price too high — contact support for premium listings"),
-  requiresDeposit: z.boolean().default(false),
-  depositAmount: z.number().optional(),
-}).refine(
-  (d) => !d.requiresDeposit || (d.depositAmount != null && d.depositAmount > 0 && d.depositAmount <= d.price),
-  { message: "Deposit must be between KES 1 and the full service price", path: ["depositAmount"] }
-);
-
 export const Step4Schema = z.object({
-  services: z
-    .array(ServiceEntrySchema)
-    .min(1, "Add at least one service")
-    .max(20, "Maximum 20 services"),
+  offeredServices: z.array(z.string()).default([]),
+  customServices: z
+    .array(z.string().trim().max(100, "Max 100 characters per service"))
+    .max(5, "Maximum 5 custom services")
+    .default([]),
 });
 
 // ─── Step 5 — Availability & Preferences ────────────────────────────────────
@@ -167,4 +142,3 @@ export type Step2Input       = z.infer<typeof Step2Schema>;
 export type Step3Input       = z.infer<typeof Step3Schema>;
 export type Step4Input       = z.infer<typeof Step4Schema>;
 export type Step5Input       = z.infer<typeof Step5Schema>;
-export type ServiceEntry     = z.infer<typeof ServiceEntrySchema>;

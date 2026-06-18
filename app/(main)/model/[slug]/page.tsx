@@ -231,7 +231,7 @@ export default async function ModelProfilePage({ params }: Props) {
                   <PhotoGallery photos={profile.photos.slice(1)} />
                 </section>
               )}
-              <ServicesList services={profile.services} profileId={profile.id} />
+              <ServicesList services={profile.offeredServices ?? []} />
               <ReviewsList
                 reviews={profile.reviews}
                 avgRating={profile.avgRating}

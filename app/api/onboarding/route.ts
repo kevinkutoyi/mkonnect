@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${n++}`;
     }
 
+    // Merge predefined + custom services into one array
+    const allOfferedServices = [
+      ...(d.offeredServices ?? []),
+      ...(d.customServices ?? []).filter(Boolean),
+    ];
+
     // Upsert profile
     const profile = await prisma.masseuseProfile.upsert({
       where: { userId: session.user.id },
@@ -69,6 +75,7 @@ export async function POST(req: NextRequest) {
         availableSun:     d.availableSun,
         availableFrom:    d.availableFrom,
         availableTo:      d.availableTo,
+        offeredServices:  allOfferedServices,
         status:           "APPROVED",
       },
       update: {
@@ -90,34 +97,7 @@ export async function POST(req: NextRequest) {
         availableSun:     d.availableSun,
         availableFrom:    d.availableFrom,
         availableTo:      d.availableTo,
-      },
-    });
-
-    // Replace services
-    await prisma.service.deleteMany({ where: { profileId: profile.id } });
-    if (d.services.length > 0) {
-      await prisma.service.createMany({
-        data: d.services.map((s: any, i: number) => ({
-          profileId:      profile.id,
-          categoryId:     s.categoryId,
-          name:           s.name,
-          description:    s.description || null,
-          duration:       s.duration,
-          price:          s.price,
-          requiresDeposit: s.requiresDeposit,
-          depositAmount:  s.depositAmount ?? null,
-          sortOrder:      i,
-        })),
-      });
-    }
-
-    // Compute price range
-    const prices = d.services.map((s: any) => s.price);
-    await prisma.masseuseProfile.update({
-      where: { id: profile.id },
-      data: {
-        minPrice: Math.min(...prices),
-        maxPrice: Math.max(...prices),
+        offeredServices:  allOfferedServices,
       },
     });
 

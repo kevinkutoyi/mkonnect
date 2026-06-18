@@ -18,6 +18,7 @@ import {
   type OnboardingInput,
 } from "@/lib/validations/onboarding";
 
+
 import { StepIndicator } from "./StepIndicator";
 import { Step1Personal }   from "./steps/Step1Personal";
 import { Step2Location }   from "./steps/Step2Location";
@@ -67,7 +68,8 @@ function buildDefaults(user: Props["user"], profile: any): Partial<OnboardingInp
       availableSun: false,
       availableFrom: "08:00",
       availableTo: "20:00",
-      services: [],
+      offeredServices: [],
+      customServices: [],
     };
   }
 
@@ -97,15 +99,8 @@ function buildDefaults(user: Props["user"], profile: any): Partial<OnboardingInp
     availableSun:      profile.availableSun,
     availableFrom:     profile.availableFrom ?? "08:00",
     availableTo:       profile.availableTo ?? "20:00",
-    services:          profile.services?.map((s: any) => ({
-      categoryId:      s.categoryId ?? 0,
-      name:            s.name,
-      description:     s.description ?? "",
-      duration:        s.duration,
-      price:           Number(s.price),
-      requiresDeposit: s.requiresDeposit,
-      depositAmount:   s.depositAmount ? Number(s.depositAmount) : undefined,
-    })) ?? [],
+    offeredServices:   profile.offeredServices ?? [],
+    customServices:    [],
   };
 }
 
@@ -229,7 +224,7 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
           {step === 0 && <Step1Personal form={form} />}
           {step === 1 && <Step2Location form={form} counties={counties} />}
           {step === 2 && <Step3Profile  form={form} />}
-          {step === 3 && <Step4Services form={form} categories={categories} />}
+          {step === 3 && <Step4Services form={form} />}
           {step === 4 && <Step5Availability form={form} />}
         </div>
 

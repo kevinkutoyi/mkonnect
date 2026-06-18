@@ -368,6 +368,9 @@ model MasseuseProfile {
   // Payout details
   payoutPhone     String?   // M-Pesa number for weekly payouts (format: 2547XXXXXXXX)
 
+  // Predefined + custom services the model offers (simple checklist)
+  offeredServices String[] @default([])
+
   // Payment-gated public visibility
   // true only when: status=APPROVED AND an ACTIVE ProfileSubscription exists
   // Set by: subscription activation callback, expiry cron, admin override

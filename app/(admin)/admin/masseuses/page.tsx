@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter }        from "next/navigation";
 import Image from "next/image";
 import {
-  Ban, RotateCcw,
+  Ban, RotateCcw, XCircle,
   MapPin, Calendar, Search, ExternalLink,
   Loader2, CheckCircle2,
 } from "lucide-react";
