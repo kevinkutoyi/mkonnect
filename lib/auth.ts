@@ -169,12 +169,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     // ── JWT: embed role + id on every token ──────────────────────────────────
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, account, trigger, session }) {
       // Initial sign-in — `user` is populated
       if (user) {
         token.id = user.id!;
-        token.role = (user as any).role as Role;
-        token.emailVerified = (user as any).emailVerified ?? null;
+
+        // For Google OAuth, read role from DB — the signIn callback may have
+        // updated it (e.g. VISITOR → MASSEUSE from register page selection),
+        // and user object mutations don't propagate across callbacks.
+        if (account?.provider === "google") {
+          const fresh = await prisma.user.findUnique({
+            where: { id: user.id! },
+            select: { role: true, emailVerified: true },
+          });
+          token.role = fresh?.role ?? ((user as any).role as Role);
+          token.emailVerified = fresh?.emailVerified ?? (user as any).emailVerified ?? null;
+        } else {
+          token.role = (user as any).role as Role;
+          token.emailVerified = (user as any).emailVerified ?? null;
+        }
       }
 
       // Session update triggered by update() call
@@ -240,7 +253,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Apply role from register page selection (only upgrade VISITOR → MASSEUSE)
         if (pendingRole === "MASSEUSE" && (!dbUser || dbUser.role === "VISITOR")) {
           updates.role = "MASSEUSE";
-          (user as any).role = "MASSEUSE"; // mutate so jwt callback gets correct role
         }
 
         if (Object.keys(updates).length > 0 && dbUser) {
