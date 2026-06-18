@@ -123,9 +123,16 @@ export default function RegisterPage() {
       {/* Google sign-up */}
       <button
         type="button"
-        onClick={() =>
-          signIn("google", { callbackUrl: `/api/auth/post-google?role=${role}` })
-        }
+        onClick={async () => {
+          // Set role cookie before OAuth so signIn callback can assign it at JWT creation time
+          await fetch("/api/auth/set-pending-role", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role }),
+          });
+          const callbackUrl = role === "MASSEUSE" ? "/dashboard/onboarding" : "/search";
+          signIn("google", { callbackUrl });
+        }}
         className="flex w-full items-center justify-center gap-3 rounded-lg border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24">

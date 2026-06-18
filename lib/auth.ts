@@ -213,23 +213,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
 
-    // ── SignIn: block banned/inactive accounts from OAuth too ─────────────────
+    // ── SignIn: block banned/inactive; set role from cookie for Google sign-ups ─
     async signIn({ user, account }) {
-      // For OAuth sign-ins, check the DB record
       if (account?.provider !== "credentials") {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
-          select: { isBanned: true, isActive: true, emailVerified: true },
+          select: { isBanned: true, isActive: true, emailVerified: true, role: true },
         });
         if (dbUser?.isBanned || dbUser?.isActive === false) return false;
 
-        // If linking to an existing account, mark email as verified
-        // (Google guarantees email ownership)
-        if (dbUser && !dbUser.emailVerified) {
-          await prisma.user.update({
-            where: { email: user.email! },
-            data: { emailVerified: new Date() },
-          });
+        // Read the pending role cookie set by the register page before OAuth
+        let pendingRole: string | undefined;
+        try {
+          const { cookies } = await import("next/headers");
+          pendingRole = cookies().get("pending_google_role")?.value;
+        } catch { /* not in a request context */ }
+
+        const updates: Record<string, any> = {};
+        if (!dbUser?.emailVerified) updates.emailVerified = new Date();
+        if (pendingRole === "MASSEUSE" && dbUser?.role === "VISITOR") {
+          updates.role = "MASSEUSE";
+          // Mutate user so the jwt callback gets the correct role at token creation
+          (user as any).role = "MASSEUSE";
+        }
+        if (Object.keys(updates).length > 0) {
+          await prisma.user.update({ where: { email: user.email! }, data: updates });
         }
       }
       return true;
