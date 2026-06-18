@@ -11,7 +11,7 @@ import {
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Listing Plan — mconnect" };
+export const metadata: Metadata = { title: "Listing Plan — modelsraha" };
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",

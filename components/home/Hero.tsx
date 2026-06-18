@@ -40,7 +40,10 @@ export function Hero({ locations }: HeroProps) {
           </span>
         </h1>
 
-        <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-xl text-xl font-semibold text-muted-foreground">
+          Find your perfect model match
+        </p>
+        <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
           Browse verified, professional models across Kenya.
           Book in minutes, pay securely via M-Pesa.
         </p>

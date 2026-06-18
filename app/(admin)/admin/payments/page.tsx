@@ -8,7 +8,7 @@ import { PaymentsDashboard } from "@/components/admin/payments/PaymentsDashboard
 import { DollarSign, Clock, CheckCircle2, XCircle, TrendingUp, AlertTriangle } from "lucide-react";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Payments — Admin | mconnect" };
+export const metadata: Metadata = { title: "Payments — Admin | modelsraha" };
 
 // Revalidate every 60s so stats are fresh on page load without a full re-deploy
 export const revalidate = 60;

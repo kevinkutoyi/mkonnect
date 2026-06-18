@@ -11,7 +11,7 @@ export function Footer() {
           <div>
             <Link href="/" className="inline-flex items-center gap-1.5 font-bold text-lg mb-3">
               <MapPin className="h-4 w-4 text-primary" />
-              m<span className="text-primary">connect</span>
+              <span className="text-primary">modelsraha</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Kenya's platform for professional massage services.
@@ -42,7 +42,7 @@ export function Footer() {
             <h3 className="font-semibold text-sm mb-3">For Models</h3>
             <ul className="space-y-2">
               {[
-                { label: "Join mconnect", href: "/register" },
+                { label: "Join modelsraha", href: "/register" },
                 { label: "Dashboard",    href: "/dashboard" },
               ].map(({ label, href }) => (
                 <li key={label}>
@@ -56,7 +56,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-5 border-t text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} mconnect. All rights reserved.
+          © {new Date().getFullYear()} modelsraha. All rights reserved.
         </div>
       </div>
     </footer>

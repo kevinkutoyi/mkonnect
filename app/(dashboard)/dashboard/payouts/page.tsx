@@ -9,7 +9,7 @@ import { PayoutPhoneForm } from "@/components/dashboard/PayoutPhoneForm";
 import { formatKES } from "@/lib/utils";
 import { CheckCircle2, Clock, XCircle, Loader2, BanknoteIcon } from "lucide-react";
 
-export const metadata: Metadata = { title: "Payouts — mconnect" };
+export const metadata: Metadata = { title: "Payouts — modelsraha" };
 
 const STATUS_CONFIG = {
   COMPLETED:  { label: "Paid",       color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", icon: CheckCircle2 },

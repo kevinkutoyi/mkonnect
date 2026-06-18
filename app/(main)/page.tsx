@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 const websiteSchema = {
   "@context":        "https://schema.org",
   "@type":           "WebSite",
-  name:              "mconnect",
+  name:              "modelsraha",
   url:               BASE_URL,
   potentialAction: {
     "@type":        "SearchAction",
