@@ -26,5 +26,6 @@ export async function GET(req: NextRequest) {
   }
 
   const dest = role === "MASSEUSE" ? "/dashboard/onboarding" : "/search";
-  return NextResponse.redirect(new URL(dest, req.url));
+  const base = process.env.NEXTAUTH_URL ?? `https://${req.headers.get("host")}`;
+  return NextResponse.redirect(new URL(dest, base));
 }
