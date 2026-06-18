@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { verifyAutoLoginToken } from "@/lib/tokens";
 import type { Role } from "@prisma/client";
+import { authConfig } from "./auth.config";
 
 // ─── Type augmentation ────────────────────────────────────────────────────────
 declare module "next-auth" {
@@ -40,7 +41,9 @@ declare module "next-auth/jwt" {
 
 // ─── Auth config ──────────────────────────────────────────────────────────────
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true,
+  // Spread the lite config (pages, session strategy) then override with
+  // full Node.js-only callbacks that include Prisma DB calls.
+  ...authConfig,
   adapter: (() => {
     const base = PrismaAdapter(prisma) as any;
     // Our schema uses `avatarUrl` instead of NextAuth's expected `image` field.
@@ -57,13 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     };
   })(),
 
-  // JWT sessions — stateless, role embedded in token
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
-
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/login",
-  },
+  // session strategy and pages come from authConfig (spread above)
 
   providers: [
     // ── Google OAuth ────────────────────────────────────────────────────────
