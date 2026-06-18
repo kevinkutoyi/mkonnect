@@ -3,8 +3,8 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM ?? "noreply@mconnect.co.ke";
-const APP_URL = process.env.NEXTAUTH_URL ?? "https://mconnect.co.ke";
+const FROM = process.env.EMAIL_FROM ?? "noreply@modelsraha.com";
+const APP_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.com";
 const APP_NAME = "modelsraha";
 
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ export async function sendWelcomeEmail(params: {
 }) {
   const cta =
     params.role === "MASSEUSE"
-      ? { label: "Set Up Your Profile", href: `${APP_URL}/dashboard/profile` }
+      ? { label: "Set Up Your Profile", href: `${APP_URL}/dashboard/onboarding` }
       : { label: "Find a Model", href: `${APP_URL}/search` };
 
   const body =
