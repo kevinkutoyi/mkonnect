@@ -220,7 +220,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: user.email! },
           select: { isBanned: true, isActive: true, emailVerified: true, role: true },
         });
-        if (dbUser?.isBanned || dbUser?.isActive === false) return false;
+
+        // Block banned users from all OAuth providers
+        if (dbUser?.isBanned) return false;
 
         // Read the pending role cookie set by the register page before OAuth
         let pendingRole: string | undefined;
@@ -230,13 +232,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch { /* not in a request context */ }
 
         const updates: Record<string, any> = {};
+
+        // Google verifies email ownership — ensure account is active
+        if (!dbUser?.isActive) updates.isActive = true;
         if (!dbUser?.emailVerified) updates.emailVerified = new Date();
-        if (pendingRole === "MASSEUSE" && dbUser?.role === "VISITOR") {
+
+        // Apply role from register page selection (only upgrade VISITOR → MASSEUSE)
+        if (pendingRole === "MASSEUSE" && (!dbUser || dbUser.role === "VISITOR")) {
           updates.role = "MASSEUSE";
-          // Mutate user so the jwt callback gets the correct role at token creation
-          (user as any).role = "MASSEUSE";
+          (user as any).role = "MASSEUSE"; // mutate so jwt callback gets correct role
         }
-        if (Object.keys(updates).length > 0) {
+
+        if (Object.keys(updates).length > 0 && dbUser) {
           await prisma.user.update({ where: { email: user.email! }, data: updates });
         }
       }
