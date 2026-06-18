@@ -1,6 +1,6 @@
 // app/api/auth/verify-email/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { verifyEmailToken } from "@/lib/tokens";
+import { verifyEmailToken, createAutoLoginToken } from "@/lib/tokens";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email";
 
@@ -28,6 +28,12 @@ export async function GET(req: NextRequest) {
         name: user.name,
         role: user.role === "MASSEUSE" ? "MASSEUSE" : "VISITOR",
       }).catch((e) => console.error("[VerifyEmail] welcome email error", e));
+
+      // Auto-login: generate a short-lived signed token and redirect
+      const autoToken = createAutoLoginToken(userId, user.role);
+      return NextResponse.redirect(
+        new URL(`/auth/verified?t=${autoToken}`, req.url)
+      );
     }
 
     return NextResponse.redirect(new URL("/auth/verify-email?success=1", req.url));

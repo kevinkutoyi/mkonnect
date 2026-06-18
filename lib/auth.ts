@@ -8,6 +8,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { verifyAutoLoginToken } from "@/lib/tokens";
 import type { Role } from "@prisma/client";
 
 // ─── Type augmentation ────────────────────────────────────────────────────────
@@ -76,8 +77,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        autoLoginToken: { label: "Auto Login Token", type: "text" },
       },
       async authorize(credentials) {
+        // ── Auto-login after email verification ─────────────────────────────
+        if (credentials?.autoLoginToken) {
+          const { userId } = verifyAutoLoginToken(credentials.autoLoginToken as string);
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true, name: true, avatarUrl: true, role: true, emailVerified: true, isActive: true, isBanned: true },
+          });
+          if (!user || user.isBanned || !user.isActive) throw new Error("INVALID_CREDENTIALS");
+          await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), loginCount: { increment: 1 } } });
+          return { id: user.id, email: user.email, name: user.name, image: user.avatarUrl ?? null, role: user.role, emailVerified: user.emailVerified };
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error("EMAIL_PASSWORD_REQUIRED");
         }

@@ -4,6 +4,49 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
+// ─── Auto-login token (post-email-verification) ───────────────────────────────
+// HMAC-signed, stateless, 5-minute expiry. No DB required.
+// Format (before base64url): `userId:role:expiry:hmac`
+
+const AUTO_LOGIN_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+export function createAutoLoginToken(userId: string, role: string): string {
+  const expiry = Date.now() + AUTO_LOGIN_EXPIRY_MS;
+  const payload = `${userId}:${role}:${expiry}`;
+  const hmac = crypto
+    .createHmac("sha256", process.env.NEXTAUTH_SECRET!)
+    .update(payload)
+    .digest("hex");
+  return Buffer.from(`${payload}:${hmac}`).toString("base64url");
+}
+
+export function verifyAutoLoginToken(token: string): { userId: string; role: string } {
+  let decoded: string;
+  try {
+    decoded = Buffer.from(token, "base64url").toString();
+  } catch {
+    throw new Error("AUTO_LOGIN_INVALID");
+  }
+
+  // Split from the right to isolate hmac (which has no colons)
+  const lastColon = decoded.lastIndexOf(":");
+  const payload = decoded.slice(0, lastColon);
+  const hmac = decoded.slice(lastColon + 1);
+
+  const expectedHmac = crypto
+    .createHmac("sha256", process.env.NEXTAUTH_SECRET!)
+    .update(payload)
+    .digest("hex");
+
+  if (hmac !== expectedHmac) throw new Error("AUTO_LOGIN_INVALID");
+
+  const parts = payload.split(":");
+  const expiry = parseInt(parts[2], 10);
+  if (Date.now() > expiry) throw new Error("AUTO_LOGIN_EXPIRED");
+
+  return { userId: parts[0], role: parts[1] };
+}
+
 const RESET_EXPIRY_HOURS = 1;
 const VERIFY_EXPIRY_HOURS = 24;
 
