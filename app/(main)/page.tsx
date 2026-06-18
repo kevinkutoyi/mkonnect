@@ -2,7 +2,7 @@
 import type { Metadata }     from "next";
 import { Hero }              from "@/components/home/Hero";
 import { FeaturedMasseuses } from "@/components/home/FeaturedMasseuses";
-import { Categories }        from "@/components/home/Categories";
+// import { Categories }        from "@/components/home/Categories";
 import { Cities }            from "@/components/home/Cities";
 import { HowItWorks }        from "@/components/home/HowItWorks";
 import { SafetyNotice }      from "@/components/home/SafetyNotice";
@@ -52,13 +52,8 @@ export default async function HomePage() {
       orderBy: { name: "asc" },
       take:    30,
     }),
-    // Categories with masseuse counts
-    prisma.category.findMany({
-      where:   { isActive: true },
-      orderBy: { sortOrder: "asc" },
-      include: { _count: { select: { profiles: true } } },
-      take:    8,
-    }),
+    // Categories (kept for potential future use, not rendered on homepage)
+    Promise.resolve([]),
     // Major cities with masseuse counts
     prisma.city.findMany({
       where:   { isMajor: true },
@@ -80,7 +75,6 @@ export default async function HomePage() {
       />
       <Hero locations={locations} />
       <FeaturedMasseuses masseuses={featured} />
-      <Categories categories={categories} />
       <Cities cities={cities} />
       <HowItWorks />
       <SafetyNotice />
