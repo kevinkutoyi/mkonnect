@@ -41,7 +41,21 @@ declare module "next-auth/jwt" {
 // ─── Auth config ──────────────────────────────────────────────────────────────
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: (() => {
+    const base = PrismaAdapter(prisma) as any;
+    // Our schema uses `avatarUrl` instead of NextAuth's expected `image` field.
+    // Remap on create and update so the adapter doesn't crash.
+    const remap = (data: any) => {
+      if (!data) return data;
+      const { image, ...rest } = data;
+      return image !== undefined ? { ...rest, avatarUrl: image } : rest;
+    };
+    return {
+      ...base,
+      createUser: (data: any) => base.createUser(remap(data)),
+      updateUser: (data: any) => base.updateUser(remap(data)),
+    };
+  })(),
 
   // JWT sessions — stateless, role embedded in token
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
