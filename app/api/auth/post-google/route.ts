@@ -27,5 +27,7 @@ export async function GET(req: NextRequest) {
 
   const dest = role === "MASSEUSE" ? "/dashboard/onboarding" : "/search";
   const base = process.env.NEXTAUTH_URL ?? `https://${req.headers.get("host")}`;
-  return NextResponse.redirect(new URL(dest, base));
+  // Go through /auth/refresh to force the JWT to pick up the new role before landing
+  const refreshUrl = `/auth/refresh?dest=${encodeURIComponent(dest)}&role=${role ?? "VISITOR"}`;
+  return NextResponse.redirect(new URL(refreshUrl, base));
 }
