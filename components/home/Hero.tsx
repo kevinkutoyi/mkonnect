@@ -30,7 +30,7 @@ export function Hero({ locations }: HeroProps) {
         {/* Badge */}
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
           <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          Kenya's #1 Massage Marketplace
+          Kenya's #1 Model Services Platform
         </div>
 
         <h1 className="text-5xl font-extrabold tracking-tight text-foreground md:text-7xl">
