@@ -55,6 +55,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Allow linking Google to an existing email/password account
+      allowDangerousEmailAccountLinking: true,
       profile(profile) {
         return {
           id: profile.sub,
@@ -189,9 +191,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider !== "credentials") {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
-          select: { isBanned: true, isActive: true },
+          select: { isBanned: true, isActive: true, emailVerified: true },
         });
         if (dbUser?.isBanned || dbUser?.isActive === false) return false;
+
+        // If linking to an existing account, mark email as verified
+        // (Google guarantees email ownership)
+        if (dbUser && !dbUser.emailVerified) {
+          await prisma.user.update({
+            where: { email: user.email! },
+            data: { emailVerified: new Date() },
+          });
+        }
       }
       return true;
     },

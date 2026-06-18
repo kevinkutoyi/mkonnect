@@ -2,14 +2,13 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, User, ListChecks, LogOut, MapPin, Tag, Banknote } from "lucide-react";
+import { LayoutDashboard, User, MapPin, Tag, Banknote } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard",             label: "Overview",     icon: LayoutDashboard },
   { href: "/dashboard/onboarding",  label: "My Profile",   icon: User            },
-  { href: "/dashboard/services",    label: "Services",     icon: ListChecks      },
-  { href: "/dashboard/listing",     label: "Listing Plan", icon: Tag             },
+{ href: "/dashboard/listing",     label: "Listing Plan", icon: Tag             },
   { href: "/dashboard/payouts",     label: "Payouts",      icon: Banknote        },
 ];
 

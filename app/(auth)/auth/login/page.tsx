@@ -18,7 +18,7 @@ const AUTH_ERRORS: Record<string, string> = {
   ACCOUNT_INACTIVE: "Your account is inactive. Contact support.",
   EMAIL_PASSWORD_REQUIRED: "Please enter your email and password.",
   OAuthAccountNotLinked:
-    "This email is linked to a Google account. Please sign in with Google.",
+    "An account with this email already exists. Please sign in with your email and password instead.",
   default: "Something went wrong. Please try again.",
 };
 
