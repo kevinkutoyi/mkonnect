@@ -130,7 +130,13 @@ export default function RegisterPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role }),
           });
-          const callbackUrl = role === "MASSEUSE" ? "/dashboard/onboarding" : "/search";
+          // For MASSEUSE: route through post-google so the DB role is updated
+          // before the JWT is read, then refresh page stamps the new role into the token.
+          // For VISITOR (Client): go straight to search — no role change needed.
+          const callbackUrl =
+            role === "MASSEUSE"
+              ? `/api/auth/post-google?role=MASSEUSE&dest=${encodeURIComponent("/dashboard/onboarding")}`
+              : "/search";
           signIn("google", { callbackUrl });
         }}
         className="flex w-full items-center justify-center gap-3 rounded-lg border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"

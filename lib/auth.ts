@@ -190,10 +190,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // Session update triggered by update() call
+      // Session update triggered by update() call (e.g. from /auth/refresh page)
       if (trigger === "update" && session) {
         if (session.role) token.role = session.role;
         if (session.emailVerified) token.emailVerified = session.emailVerified;
+        // Prevent the 5-min DB refresh below from immediately overriding this update
+        (token as any).lastRefresh = Math.floor(Date.now() / 1000);
       }
 
       // Refresh role from DB every 5 minutes to pick up admin changes
