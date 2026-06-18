@@ -28,7 +28,7 @@ export default async function PayoutsPage() {
     select: { id: true, payoutPhone: true },
   });
 
-  if (!profile) redirect("/dashboard/profile");
+  if (!profile) redirect("/dashboard/onboarding");
 
   const payouts = await prisma.payout.findMany({
     where:   { profileId: profile.id },

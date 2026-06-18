@@ -68,7 +68,7 @@ export async function assertEmailVerified() {
   if (!session) redirect("/auth/login");
 
   if (!session.user.emailVerified) {
-    redirect("/auth/verify-request");
+    redirect("/auth/verify-email");
   }
 
   return session;

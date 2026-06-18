@@ -59,11 +59,11 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login" className="text-sm font-medium hover:text-primary">
+              <Link href="/auth/login" className="text-sm font-medium hover:text-primary">
                 Log in
               </Link>
               <Link
-                href="/register"
+                href="/auth/register"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Sign up
@@ -99,8 +99,8 @@ export function Navbar() {
               </button>
             ) : (
               <>
-                <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
-                <Link href="/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
+                <Link href="/auth/login" onClick={() => setMenuOpen(false)}>Log in</Link>
+                <Link href="/auth/register" onClick={() => setMenuOpen(false)}>Sign up</Link>
               </>
             )}
             <ThemeToggle />

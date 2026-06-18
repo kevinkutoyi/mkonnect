@@ -240,9 +240,9 @@ export default function RegisterPage() {
           <input type="checkbox" {...register("agreeToTerms")} className="mt-0.5 rounded" />
           <span className="text-muted-foreground leading-snug">
             I agree to modelsraha's{" "}
-            <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+            <Link href="#" className="text-primary hover:underline">Terms of Service</Link>
             {" "}and{" "}
-            <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+            <Link href="#" className="text-primary hover:underline">Privacy Policy</Link>
           </span>
         </label>
         {errors.agreeToTerms && (

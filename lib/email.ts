@@ -338,7 +338,7 @@ export async function sendListingRejectedEmail(params: {
   action: "SUSPEND" | "BAN" | "PENDING";
   reason?: string;
 }) {
-  const supportUrl = `${APP_URL}/support`;
+  const supportUrl = `mailto:support@modelsraha.com`;
   const dashUrl    = `${APP_URL}/dashboard`;
 
   const headlines: Record<typeof params.action, string> = {

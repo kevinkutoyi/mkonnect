@@ -43,7 +43,7 @@ export default function ConfirmationPage({
           Browse More
         </Link>
         <Link
-          href="/dashboard/bookings"
+          href="/dashboard"
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           My Bookings

@@ -150,7 +150,7 @@ export default function NotificationBell() {
           {items.length > 0 && (
             <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 text-center">
               <Link
-                href="/dashboard/notifications"
+                href="/dashboard"
                 onClick={() => setOpen(false)}
                 className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
               >

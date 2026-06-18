@@ -132,7 +132,7 @@ export default async function ListingPage({
       {!profile && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
           ⚠ Complete your{" "}
-          <a href="/dashboard/profile" className="font-medium underline">
+          <a href="/dashboard/onboarding" className="font-medium underline">
             profile setup
           </a>{" "}
           before purchasing a listing plan.
