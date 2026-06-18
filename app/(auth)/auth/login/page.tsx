@@ -12,6 +12,7 @@ import type { Metadata } from "next";
 
 // Auth error messages mapped from NextAuth error codes
 const AUTH_ERRORS: Record<string, string> = {
+  CredentialsSignin: "Incorrect email or password.",
   INVALID_CREDENTIALS: "Incorrect email or password.",
   ACCOUNT_BANNED: "Your account has been suspended. Contact support.",
   ACCOUNT_INACTIVE: "Your account is inactive. Contact support.",
