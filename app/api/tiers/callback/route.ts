@@ -42,13 +42,17 @@ export async function POST(req: NextRequest) {
 
 // ── Redirect (browser GET after Pesapal payment page) ─────────────────────────
 export async function GET(req: NextRequest) {
+  // Use NEXTAUTH_URL as the base so redirects go to the public domain,
+  // not the internal localhost port that Next.js sees behind a reverse proxy.
+  const base = process.env.NEXTAUTH_URL ?? `https://${req.headers.get("host")}`;
+
   const { searchParams } = req.nextUrl;
   const orderTrackingId   = searchParams.get("OrderTrackingId");
   const merchantReference = searchParams.get("OrderMerchantReference");
 
   if (!orderTrackingId || !merchantReference) {
     return NextResponse.redirect(
-      new URL("/dashboard/listing?status=failed&reason=missing_params", req.url)
+      new URL("/dashboard/listing?status=failed&reason=missing_params", base)
     );
   }
 
@@ -58,36 +62,33 @@ export async function GET(req: NextRequest) {
     switch (result.outcome) {
       case "ACTIVATED":
         return NextResponse.redirect(
-          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, req.url)
+          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, base)
         );
       case "PENDING":
         return NextResponse.redirect(
-          new URL(
-            `/dashboard/listing?status=pending&trackingId=${orderTrackingId}`,
-            req.url
-          )
+          new URL(`/dashboard/listing?status=pending&trackingId=${orderTrackingId}`, base)
         );
       case "FAILED":
         return NextResponse.redirect(
-          new URL("/dashboard/listing?status=failed&reason=payment_failed", req.url)
+          new URL("/dashboard/listing?status=failed&reason=payment_failed", base)
         );
       case "REVERSED":
         return NextResponse.redirect(
-          new URL("/dashboard/listing?status=failed&reason=reversed", req.url)
+          new URL("/dashboard/listing?status=failed&reason=reversed", base)
         );
       case "ALREADY_ACTIVE":
         return NextResponse.redirect(
-          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, req.url)
+          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, base)
         );
       default:
         return NextResponse.redirect(
-          new URL("/dashboard/listing?status=failed", req.url)
+          new URL("/dashboard/listing?status=failed", base)
         );
     }
   } catch (err) {
     console.error("[Tier Callback GET]", err);
     return NextResponse.redirect(
-      new URL("/dashboard/listing?status=failed&reason=server_error", req.url)
+      new URL("/dashboard/listing?status=failed&reason=server_error", base)
     );
   }
 }
