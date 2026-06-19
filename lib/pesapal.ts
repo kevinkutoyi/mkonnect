@@ -217,8 +217,10 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Tra
     );
 
     if (res.data.error) {
+      // Log full response so we can see what PesaPal actually returned
+      console.error("[Pesapal] GetTransactionStatus error body:", JSON.stringify(res.data));
       throw new PesapalError(
-        res.data.error.message ?? "GetTransactionStatus returned an error",
+        res.data.error.message ?? res.data.error.error_message ?? "GetTransactionStatus returned an error",
         "STATUS_ERROR"
       );
     }

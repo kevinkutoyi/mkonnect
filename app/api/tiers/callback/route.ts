@@ -139,7 +139,11 @@ async function processPayment(
     txStatus = await getTransactionStatus(orderTrackingId);
   } catch (err) {
     if (err instanceof PesapalError) {
-      console.error("[Pesapal] GetTransactionStatus failed:", err.message);
+      console.error("[Pesapal] GetTransactionStatus failed:", err.message, "| code:", err.code);
+      // PesaPal returned an error (e.g. order not found, API issue).
+      // Treat as PENDING so the user isn't shown a failure for a payment that may have succeeded.
+      // The IPN POST (server-to-server) will update the subscription when PesaPal processes it.
+      return { outcome: "PENDING", statusCode: null };
     }
     throw err;
   }
