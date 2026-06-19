@@ -30,7 +30,7 @@ interface Props {
 }
 
 const POLL_INTERVAL_MS = 5_000;
-const MAX_POLLS        = 6; // 30 seconds — then show timeout message
+const MAX_POLLS        = 24; // 2 minutes — M-Pesa STK push can take time to register
 
 export function PaymentStatusBanner({ status, trackingId, merchantRef, reason }: Props) {
   const router        = useRouter();
