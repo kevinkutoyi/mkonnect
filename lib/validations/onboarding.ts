@@ -101,24 +101,27 @@ export const Step4Schema = z.object({
 // ─── Step 5 — Availability & Preferences ────────────────────────────────────
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/; // HH:MM 24-hour
 
-export const Step5Schema = z
-  .object({
-    availableMon: z.boolean().default(false),
-    availableTue: z.boolean().default(false),
-    availableWed: z.boolean().default(false),
-    availableThu: z.boolean().default(false),
-    availableFri: z.boolean().default(false),
-    availableSat: z.boolean().default(false),
-    availableSun: z.boolean().default(false),
-    availableFrom: z
-      .string()
-      .regex(TIME_REGEX, "Use HH:MM format (e.g. 08:00)")
-      .default("08:00"),
-    availableTo: z
-      .string()
-      .regex(TIME_REGEX, "Use HH:MM format (e.g. 20:00)")
-      .default("20:00"),
-  })
+// Base object (no .refine) so it can be used in .merge() — ZodEffects can't merge
+const Step5BaseSchema = z.object({
+  availableMon: z.boolean().default(false),
+  availableTue: z.boolean().default(false),
+  availableWed: z.boolean().default(false),
+  availableThu: z.boolean().default(false),
+  availableFri: z.boolean().default(false),
+  availableSat: z.boolean().default(false),
+  availableSun: z.boolean().default(false),
+  availableFrom: z
+    .string()
+    .regex(TIME_REGEX, "Use HH:MM format (e.g. 08:00)")
+    .default("08:00"),
+  availableTo: z
+    .string()
+    .regex(TIME_REGEX, "Use HH:MM format (e.g. 20:00)")
+    .default("20:00"),
+});
+
+// Step5Schema adds refinements for use in per-step validation in the wizard
+export const Step5Schema = Step5BaseSchema
   .refine(
     (d) =>
       [d.availableMon, d.availableTue, d.availableWed, d.availableThu, d.availableFri, d.availableSat, d.availableSun].some(Boolean),
@@ -130,11 +133,21 @@ export const Step5Schema = z
   );
 
 // ─── Combined full schema ─────────────────────────────────────────────────────
+// Must merge Step5BaseSchema (ZodObject), not Step5Schema (ZodEffects after .refine)
 export const OnboardingSchema = Step1Schema
   .merge(Step2Schema)
   .merge(Step3Schema)
   .merge(Step4Schema)
-  .merge(Step5Schema);
+  .merge(Step5BaseSchema)
+  .refine(
+    (d) =>
+      [d.availableMon, d.availableTue, d.availableWed, d.availableThu, d.availableFri, d.availableSat, d.availableSun].some(Boolean),
+    { message: "Select at least one working day", path: ["availableMon"] }
+  )
+  .refine(
+    (d) => d.availableFrom < d.availableTo,
+    { message: "Start time must be before end time", path: ["availableTo"] }
+  );
 
 export type OnboardingInput  = z.infer<typeof OnboardingSchema>;
 export type Step1Input       = z.infer<typeof Step1Schema>;
