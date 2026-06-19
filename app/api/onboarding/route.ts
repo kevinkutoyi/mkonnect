@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { OnboardingSchema } from "@/lib/validations/onboarding";
 import { createSlug } from "@/lib/utils";
 
@@ -107,7 +108,26 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("[Onboarding]", err);
-    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
+
+    // Unique constraint violation — most commonly phone number already in use
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = (err.meta?.target as string[] | undefined) ?? [];
+      if (target.includes("phone")) {
+        return NextResponse.json(
+          { error: "VALIDATION_ERROR", fields: { phone: ["This phone number is already registered to another account."] } },
+          { status: 422 }
+        );
+      }
+      if (target.includes("slug")) {
+        // Slug collision edge case — retry handled by caller
+        return NextResponse.json(
+          { error: "VALIDATION_ERROR", fields: { fullName: ["Name conflict — please try a slight variation."] } },
+          { status: 422 }
+        );
+      }
+    }
+
+    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Submission failed. Please try again." }, { status: 500 });
   }
 }
 
