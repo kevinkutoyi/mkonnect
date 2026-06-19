@@ -26,21 +26,11 @@ const ReviewForm = dynamic(
   { loading: () => <div className="h-32 animate-pulse rounded-xl bg-muted" /> }
 );
 
-// ── ISR — revalidate profile pages every hour ─────────────────────────────────
-export const revalidate = 3600;
+// Profile pages use auth() to check ownership — cannot use ISR/static generation.
+// Force dynamic so every request is server-rendered with a live cookie context.
+export const dynamic = "force-dynamic";
 
 interface Props { params: { slug: string } }
-
-// Pre-render top 50 profiles at build time; all others generate on-demand + cache
-export async function generateStaticParams() {
-  const masseuses = await prisma.masseuseProfile.findMany({
-    where:   { status: "APPROVED", listingActive: true },
-    select:  { slug: true },
-    orderBy: { avgRating: "desc" },
-    take:    50,
-  });
-  return masseuses.map(({ slug }) => ({ slug }));
-}
 
 async function getMasseuse(slug: string) {
   return prisma.masseuseProfile.findUnique({
