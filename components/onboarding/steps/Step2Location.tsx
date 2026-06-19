@@ -83,25 +83,35 @@ export function Step2Location({ form, counties }: Props) {
       </Field>
 
       {/* Service setting */}
-      <Field label="Where do you offer your services?" required>
+      <Field label="Where do you offer your services?" required hint="Select all that apply — you can choose both">
         <div className="grid grid-cols-2 gap-3">
           {[
             { field: "mobileService", icon: "🏠", label: "Home / Hotel visits", sub: "You travel to the client" },
             { field: "spaService",    icon: "🛁", label: "My own space",         sub: "Client comes to you" },
           ].map(({ field, icon, label, sub }) => {
-            const checked = Boolean(watch(field as string));
+            const checked = Boolean(watch(field as any));
             return (
               <label
                 key={field}
-                className={`flex cursor-pointer flex-col gap-1 rounded-xl border-2 p-4 transition-colors ${
+                className={`relative flex cursor-pointer flex-col gap-1 rounded-xl border-2 p-4 transition-colors ${
                   checked ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                 }`}
               >
                 <input
                   type="checkbox"
-                  {...register(field as string)}
+                  {...register(field as any)}
                   className="sr-only"
                 />
+                {/* Visible checkbox indicator in top-right */}
+                <span className={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
+                  checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                }`}>
+                  {checked && (
+                    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </span>
                 <span className="text-2xl">{icon}</span>
                 <span className="font-semibold text-sm">{label}</span>
                 <span className="text-xs text-muted-foreground">{sub}</span>

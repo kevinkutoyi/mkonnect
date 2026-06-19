@@ -225,6 +225,34 @@ export default async function ModelProfilePage({ params }: Props) {
             {/* Left column */}
             <div className="space-y-10 lg:col-span-2">
               <ProfileBio profile={profile} />
+
+              {/* Service settings — where the model works */}
+              {(profile.mobileService || profile.spaService) && (
+                <section>
+                  <h2 className="mb-3 text-xl font-bold">Where I work</h2>
+                  <div className="flex flex-wrap gap-3">
+                    {profile.mobileService && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3">
+                        <span className="text-xl">🏠</span>
+                        <div>
+                          <p className="font-semibold text-sm">Home / Hotel visits</p>
+                          <p className="text-xs text-muted-foreground">Travels to the client</p>
+                        </div>
+                      </div>
+                    )}
+                    {profile.spaService && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3">
+                        <span className="text-xl">🛁</span>
+                        <div>
+                          <p className="font-semibold text-sm">My own space</p>
+                          <p className="text-xs text-muted-foreground">Client comes to them</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
               {profile.photos.length > 1 && (
                 <section>
                   <h2 className="mb-4 text-xl font-bold">Gallery</h2>
