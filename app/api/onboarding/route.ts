@@ -127,7 +127,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Submission failed. Please try again." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: "INTERNAL_ERROR", message: `Server error: ${msg}` }, { status: 500 });
   }
 }
 
