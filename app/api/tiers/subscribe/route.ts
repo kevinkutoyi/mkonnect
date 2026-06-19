@@ -63,20 +63,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Guard: already has a PENDING payment in-flight (last 30 min) ───────────
+  // ── Guard: already has a PENDING payment in-flight ──────────────────────────
+  // Allow retry if:
+  //   • No orderTrackingId — payment never reached PesaPal (abandoned) → expire immediately
+  //   • Older than 10 minutes — something went wrong → expire and allow retry
   const pendingRecent = await prisma.profileSubscription.findFirst({
     where: {
-      profileId:  profile.id,
-      tierId:     tier.id,
-      status:     "PENDING",
-      createdAt:  { gt: new Date(Date.now() - 30 * 60_000) },
+      profileId: profile.id,
+      tierId:    tier.id,
+      status:    "PENDING",
+      createdAt: { gt: new Date(Date.now() - 10 * 60_000) }, // 10-min window (down from 30)
     },
   });
   if (pendingRecent) {
-    return NextResponse.json(
-      { error: "A payment for this plan is already in progress. Please complete it or wait 30 minutes." },
-      { status: 409 }
-    );
+    // If it never reached PesaPal (no tracking ID), expire it now so we can retry
+    if (!pendingRecent.orderTrackingId) {
+      await prisma.profileSubscription.update({
+        where: { id: pendingRecent.id },
+        data:  { status: "FAILED" },
+      });
+      // Fall through to create a fresh subscription below
+    } else {
+      return NextResponse.json(
+        { error: "A payment for this plan is already in progress. Please complete it or wait a few minutes." },
+        { status: 409 }
+      );
+    }
   }
 
   // ── Create PENDING subscription record ─────────────────────────────────────
