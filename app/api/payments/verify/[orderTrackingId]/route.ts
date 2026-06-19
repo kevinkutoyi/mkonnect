@@ -97,13 +97,18 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     });
   } catch (err) {
     if (err instanceof PesapalError) {
-      console.error("[Verify] Pesapal error:", err.message);
-      return NextResponse.json(
-        { error: `Could not verify payment: ${err.message}`, status: sub.status },
-        { status: 502 }
-      );
+      console.error("[Verify] Pesapal error:", err.message, err.code);
+      // Return PENDING (not 502) so the banner keeps polling gracefully
+      // rather than throwing a network error in the client
+      return NextResponse.json({
+        status: "PENDING",
+        pesapalError: err.message,
+        tierName:        sub.tier.name,
+        tierDisplayName: sub.tier.displayName,
+        tierBadge:       sub.tier.badge,
+      });
     }
     console.error("[Verify] Unexpected error:", err);
-    return NextResponse.json({ error: "Verification failed.", status: sub.status }, { status: 500 });
+    return NextResponse.json({ status: "PENDING" });
   }
 }

@@ -30,7 +30,7 @@ interface Props {
 }
 
 const POLL_INTERVAL_MS = 5_000;
-const MAX_POLLS        = 24; // 2 minutes
+const MAX_POLLS        = 6; // 30 seconds — then show timeout message
 
 export function PaymentStatusBanner({ status, trackingId, merchantRef, reason }: Props) {
   const router        = useRouter();
@@ -140,7 +140,7 @@ export function PaymentStatusBanner({ status, trackingId, merchantRef, reason }:
             </p>
             <p className="mt-0.5 text-sm text-yellow-700 dark:text-yellow-400">
               {pollCount >= MAX_POLLS
-                ? "We couldn't confirm your payment automatically. Please check your M-Pesa messages and refresh this page. If you were charged, contact support."
+                ? "We couldn't confirm your payment automatically. Check your M-Pesa messages — if you were charged your listing will activate within a few minutes via SMS notification. Refresh this page to check."
                 : "Your payment is being confirmed. This usually takes under a minute. Please don't close this page."}
             </p>
           </div>
