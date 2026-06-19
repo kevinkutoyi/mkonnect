@@ -146,7 +146,13 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
   };
 
   // ── Final submit ─────────────────────────────────────────────────────────
-  const onSubmit = async (data: OnboardingInput) => {
+  // Called directly (not via form.handleSubmit) so validation errors on hidden
+  // steps don't silently block submission. Step-by-step validation already ran;
+  // the server re-validates everything and returns field errors on failure.
+  const submitProfile = async () => {
+    const valid = await validateStep(); // validate current (last) step
+    if (!valid) return;
+
     setSubmitting(true);
     setServerError(null);
 
@@ -154,16 +160,28 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
       const res = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(form.getValues()),
       });
       const json = await res.json();
 
       if (!res.ok) {
         if (json.fields) {
+          // Map server field errors back to the form — navigate to the first
+          // step that has an error so the user can see and fix it.
+          const STEP_FIELDS = [
+            ["fullName", "phone", "whatsapp", "email", "contactPreference"],
+            ["countyId", "cityId", "neighbourhood"],
+            ["avatarUrl", "tagline", "bio", "yearsExperience", "languages", "mobileService", "spaService"],
+            ["offeredServices", "customServices"],
+            ["availableMon", "availableTue", "availableWed", "availableThu", "availableFri", "availableSat", "availableSun", "availableFrom", "availableTo"],
+          ];
           for (const [field, msgs] of Object.entries(json.fields)) {
             form.setError(field as any, { message: (msgs as string[])[0] });
           }
-          setServerError("Please fix the errors above.");
+          const errorFields = new Set(Object.keys(json.fields));
+          const badStep = STEP_FIELDS.findIndex((fields) => fields.some((f) => errorFields.has(f)));
+          if (badStep !== -1) setStep(badStep);
+          setServerError("Please fix the highlighted fields.");
         } else {
           setServerError(json.message ?? "Submission failed. Please try again.");
         }
@@ -177,6 +195,9 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
       setSubmitting(false);
     }
   };
+
+  // Keep onSubmit as a no-op so the form element doesn't trigger a page reload
+  const onSubmit = (e?: React.FormEvent) => { e?.preventDefault(); };
 
   // ── Success screen ────────────────────────────────────────────────────────
   if (done) {
@@ -261,8 +282,9 @@ export function OnboardingWizard({ counties, categories, existingProfile, user }
 
           {isLastStep ? (
             <button
-              type="submit"
+              type="button"
               disabled={submitting}
+              onClick={submitProfile}
               className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
