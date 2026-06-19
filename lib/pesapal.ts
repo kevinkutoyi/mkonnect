@@ -162,9 +162,12 @@ export async function submitOrder(params: SubmitOrderParams): Promise<SubmitOrde
       }
     );
 
-    if (res.data.error) {
+    // Same null-object guard as getTransactionStatus — PesaPal always returns
+    // error:{error_type:null,code:null,message:null} even on success.
+    const submitErr = res.data.error;
+    if (submitErr?.error_type || submitErr?.code || submitErr?.message) {
       throw new PesapalError(
-        res.data.error.message ?? "SubmitOrderRequest returned an error",
+        submitErr.message ?? "SubmitOrderRequest returned an error",
         "SUBMIT_ERROR"
       );
     }
@@ -216,16 +219,36 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Tra
       }
     );
 
-    if (res.data.error) {
-      // Log full response so we can see what PesaPal actually returned
-      console.error("[Pesapal] GetTransactionStatus error body:", JSON.stringify(res.data));
+    // PesaPal always returns error:{error_type:null,code:null,message:null} when
+    // there is NO error. An object with all-null values is still truthy in JS,
+    // so we must check actual field values, not just the object's existence.
+    const pesapalErr = res.data.error;
+    if (pesapalErr?.error_type || pesapalErr?.code || pesapalErr?.message) {
+      console.error("[Pesapal] GetTransactionStatus real error:", JSON.stringify(res.data));
       throw new PesapalError(
-        res.data.error.message ?? res.data.error.error_message ?? "GetTransactionStatus returned an error",
+        pesapalErr.message ?? pesapalErr.error_type ?? "GetTransactionStatus returned an error",
         "STATUS_ERROR"
       );
     }
 
-    return res.data as TransactionStatus;
+    const tx = res.data as TransactionStatus;
+
+    // PesaPal sometimes returns status_code=1 (pending) even when the payment is
+    // complete — e.g. confirmation_code is set and payment_status_description says
+    // "Completed". Treat this as status_code=2 so activation isn't blocked.
+    if (
+      tx.status_code === 1 &&
+      tx.confirmation_code &&
+      tx.payment_status_description?.toLowerCase().includes("completed")
+    ) {
+      console.info(
+        "[Pesapal] Upgrading status_code 1→2: confirmation_code present and status is Completed",
+        tx.confirmation_code
+      );
+      tx.status_code = 2;
+    }
+
+    return tx;
   } catch (err) {
     if (err instanceof PesapalError) throw err;
     wrapAxiosError(err, "Transactions/GetTransactionStatus");
