@@ -22,12 +22,26 @@ function isVideo(url) {
   return url.includes("/video/") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url);
 }
 
-function download(url) {
+// Load Cloudinary creds from .env for authenticated downloads
+require("dotenv").config();
+const CLOUDINARY_AUTH = process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
+  ? Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString("base64")
+  : null;
+
+function download(url, useAuth = false) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith("https") ? https.get : http.get;
-    get(url, (res) => {
+    const options = { headers: {} };
+    if (useAuth && CLOUDINARY_AUTH) {
+      options.headers["Authorization"] = `Basic ${CLOUDINARY_AUTH}`;
+    }
+    get(url, options, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return download(res.headers.location).then(resolve).catch(reject);
+        return download(res.headers.location, useAuth).then(resolve).catch(reject);
+      }
+      if (res.statusCode === 401 && !useAuth) {
+        // Retry with Cloudinary credentials
+        return download(url, true).then(resolve).catch(reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
