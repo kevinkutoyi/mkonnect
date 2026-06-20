@@ -31,24 +31,44 @@ try {
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
   }
 } catch {}
-const CLOUDINARY_AUTH = process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
-  ? Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString("base64")
-  : null;
+const CLD_KEY    = process.env.CLOUDINARY_API_KEY;
+const CLD_SECRET = process.env.CLOUDINARY_API_SECRET;
+const CLD_CLOUD  = process.env.CLOUDINARY_CLOUD_NAME;
 
-function download(url, useAuth = false) {
+/**
+ * For ACL-restricted Cloudinary images we need a signed private download URL.
+ * Format: https://api.cloudinary.com/v1_1/{cloud}/image/download?public_id=...&timestamp=...&api_key=...&signature=...
+ * Signature = SHA1("public_id={id}&timestamp={ts}" + api_secret)
+ */
+function cloudinaryPrivateUrl(originalUrl) {
+  if (!CLD_KEY || !CLD_SECRET || !CLD_CLOUD) return null;
+
+  // Extract public_id and resource type from the URL
+  // e.g. https://res.cloudinary.com/cloud/image/upload/v123/folder/file.jpg
+  const m = originalUrl.match(/cloudinary\.com\/[^/]+\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z0-9]+)?$/i);
+  if (!m) return null;
+
+  const resourceType = m[1];
+  const publicId     = m[2];
+  const timestamp    = Math.round(Date.now() / 1000);
+  const toSign       = `public_id=${publicId}&timestamp=${timestamp}${CLD_SECRET}`;
+  const signature    = crypto.createHash("sha1").update(toSign).digest("hex");
+
+  return `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/${resourceType}/download?public_id=${encodeURIComponent(publicId)}&timestamp=${timestamp}&api_key=${CLD_KEY}&signature=${signature}`;
+}
+
+function download(url) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith("https") ? https.get : http.get;
-    const options = { headers: {} };
-    if (useAuth && CLOUDINARY_AUTH) {
-      options.headers["Authorization"] = `Basic ${CLOUDINARY_AUTH}`;
-    }
-    get(url, options, (res) => {
+    get(url, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return download(res.headers.location, useAuth).then(resolve).catch(reject);
+        return download(res.headers.location).then(resolve).catch(reject);
       }
-      if (res.statusCode === 401 && !useAuth) {
-        // Retry with Cloudinary credentials
-        return download(url, true).then(resolve).catch(reject);
+      if (res.statusCode === 401 || res.statusCode === 403) {
+        // Try Cloudinary private download URL
+        const signedUrl = cloudinaryPrivateUrl(url);
+        if (signedUrl) return download(signedUrl).then(resolve).catch(reject);
+        return reject(new Error(`HTTP ${res.statusCode} — ACL denied and no credentials available`));
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
