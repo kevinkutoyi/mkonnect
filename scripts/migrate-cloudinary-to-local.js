@@ -23,7 +23,14 @@ function isVideo(url) {
 }
 
 // Load Cloudinary creds from .env for authenticated downloads
-require("dotenv").config();
+const fs = require("fs");
+try {
+  const env = fs.readFileSync(join(process.cwd(), ".env"), "utf8");
+  for (const line of env.split("\n")) {
+    const m = line.match(/^([A-Z0-9_]+)\s*=\s*"?([^"\n]+)"?\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  }
+} catch {}
 const CLOUDINARY_AUTH = process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
   ? Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString("base64")
   : null;
