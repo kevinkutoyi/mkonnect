@@ -334,6 +334,7 @@ model MasseuseProfile {
   // Media
   avatarUrl       String?
   coverPhotoUrl   String?
+  videoUrl        String?   // Cloudinary video URL shown on profile
 
   // Availability
   availableMon    Boolean @default(false)

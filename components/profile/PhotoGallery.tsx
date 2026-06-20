@@ -2,19 +2,59 @@
 // components/profile/PhotoGallery.tsx
 import Image from "next/image";
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Play } from "lucide-react";
 
-interface Props {
-  photos: any[];
+interface Photo {
+  id:      string;
+  url:     string;
+  altText: string | null;
 }
 
-export function PhotoGallery({ photos }: Props) {
+interface Props {
+  photos:    Photo[];
+  videoUrl?: string | null;
+}
+
+export function PhotoGallery({ photos, videoUrl }: Props) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <>
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Gallery</h2>
+      {/* Video preview */}
+      {videoUrl && (
+        <div className="mb-4">
+          {showVideo ? (
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              className="w-full rounded-xl max-h-72 object-contain bg-black"
+            />
+          ) : (
+            <button
+              onClick={() => setShowVideo(true)}
+              className="relative w-full overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center group"
+            >
+              <video
+                src={videoUrl}
+                className="absolute inset-0 w-full h-full object-cover opacity-60"
+                muted
+                preload="metadata"
+              />
+              <div className="relative z-10 flex flex-col items-center gap-2 text-white">
+                <div className="rounded-full bg-white/20 p-4 group-hover:bg-white/30 transition-colors">
+                  <Play className="h-8 w-8 fill-white" />
+                </div>
+                <span className="text-sm font-medium">Play video</span>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Photo grid */}
+      {photos.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photos.map((photo) => (
             <button
@@ -32,8 +72,9 @@ export function PhotoGallery({ photos }: Props) {
             </button>
           ))}
         </div>
-      </div>
+      )}
 
+      {/* Lightbox */}
       {lightbox && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"

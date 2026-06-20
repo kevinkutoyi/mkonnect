@@ -143,7 +143,7 @@ export async function submitOrder(params: SubmitOrderParams): Promise<SubmitOrde
     notification_id: params.ipnId,
     billing_address: {
       email_address: params.billingEmail,
-      phone_number:  params.billingPhone ?? "",
+      phone_number:  (params.billingPhone ?? "").replace(/^\+/, ""),
       first_name:    params.billingFirstName,
       last_name:     params.billingLastName,
     },
@@ -172,6 +172,7 @@ export async function submitOrder(params: SubmitOrderParams): Promise<SubmitOrde
       );
     }
 
+    console.info("[Pesapal] SubmitOrder redirect_url:", res.data.redirect_url);
     return res.data as SubmitOrderResult;
   } catch (err) {
     if (err instanceof PesapalError) throw err;

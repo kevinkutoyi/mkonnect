@@ -2,14 +2,15 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, User, MapPin, Tag, Banknote } from "lucide-react";
+import { LayoutDashboard, User, MapPin, Tag, Banknote, Images } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navItems = [
-  { href: "/dashboard",             label: "Overview",     icon: LayoutDashboard },
-  { href: "/dashboard/onboarding",  label: "My Profile",   icon: User            },
-{ href: "/dashboard/listing",     label: "Listing Plan", icon: Tag             },
-  { href: "/dashboard/payouts",     label: "Payouts",      icon: Banknote        },
+  { href: "/dashboard",             label: "Overview",      icon: LayoutDashboard },
+  { href: "/dashboard/onboarding",  label: "My Profile",    icon: User            },
+  { href: "/dashboard/photos",      label: "Photos & Video", icon: Images          },
+  { href: "/dashboard/listing",     label: "Listing Plan",  icon: Tag             },
+  { href: "/dashboard/payouts",     label: "Payouts",       icon: Banknote        },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

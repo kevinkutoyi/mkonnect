@@ -243,10 +243,13 @@ export default async function ModelProfilePage({ params }: Props) {
                 </section>
               )}
 
-              {profile.photos.length > 1 && (
+              {(profile.photos.length > 1 || profile.videoUrl) && (
                 <section>
                   <h2 className="mb-4 text-xl font-bold">Gallery</h2>
-                  <PhotoGallery photos={profile.photos.slice(1)} />
+                  <PhotoGallery
+                    photos={profile.photos.slice(1)}
+                    videoUrl={profile.videoUrl}
+                  />
                 </section>
               )}
               <ServicesList services={profile.offeredServices ?? []} />
