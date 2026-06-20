@@ -40,38 +40,56 @@ const CLD_CLOUD  = process.env.CLOUDINARY_CLOUD_NAME;
  * Format: https://api.cloudinary.com/v1_1/{cloud}/image/download?public_id=...&timestamp=...&api_key=...&signature=...
  * Signature = SHA1("public_id={id}&timestamp={ts}" + api_secret)
  */
+console.log(`[DEBUG] CLD_CLOUD=${CLD_CLOUD} CLD_KEY=${CLD_KEY ? "set" : "MISSING"} CLD_SECRET=${CLD_SECRET ? "set" : "MISSING"}`);
+
 function cloudinaryPrivateUrl(originalUrl) {
   if (!CLD_KEY || !CLD_SECRET || !CLD_CLOUD) return null;
+  // Only sign res.cloudinary.com delivery URLs, not already-signed API URLs
+  if (!originalUrl.includes("res.cloudinary.com")) return null;
 
-  // Extract public_id and resource type from the URL
-  // e.g. https://res.cloudinary.com/cloud/image/upload/v123/folder/file.jpg
-  const m = originalUrl.match(/cloudinary\.com\/[^/]+\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z0-9]+)?$/i);
-  if (!m) return null;
+  // Extract resource type, version, public_id from delivery URL
+  const m = originalUrl.match(/res\.cloudinary\.com\/[^/]+\/(image|video|raw)\/upload\/(?:v(\d+)\/)?(.+)$/i);
+  if (!m) { console.log("[DEBUG] regex no match for:", originalUrl); return null; }
 
   const resourceType = m[1];
-  const publicId     = m[2];
-  const timestamp    = Math.round(Date.now() / 1000);
-  const toSign       = `public_id=${publicId}&timestamp=${timestamp}${CLD_SECRET}`;
-  const signature    = crypto.createHash("sha1").update(toSign).digest("hex");
+  const publicIdWithExt = m[3]; // e.g. modelsraha/profiles/abc.jpg
+  // Strip extension from public_id
+  const publicId = publicIdWithExt.replace(/\.[a-z0-9]+$/i, "");
 
-  return `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/${resourceType}/download?public_id=${encodeURIComponent(publicId)}&timestamp=${timestamp}&api_key=${CLD_KEY}&signature=${signature}`;
+  const timestamp = Math.round(Date.now() / 1000);
+  const toSign    = `public_id=${publicId}&timestamp=${timestamp}${CLD_SECRET}`;
+  const signature = crypto.createHash("sha1").update(toSign).digest("hex");
+
+  const url = `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/${resourceType}/download?public_id=${encodeURIComponent(publicId)}&timestamp=${timestamp}&api_key=${CLD_KEY}&signature=${signature}`;
+  console.log("[DEBUG] signed URL:", url);
+  return url;
 }
 
-function download(url) {
+function download(url, isFallback = false) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith("https") ? https.get : http.get;
     get(url, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return download(res.headers.location).then(resolve).catch(reject);
+        return download(res.headers.location, isFallback).then(resolve).catch(reject);
       }
-      if (res.statusCode === 401 || res.statusCode === 403) {
-        // Try Cloudinary private download URL
-        const signedUrl = cloudinaryPrivateUrl(url);
-        if (signedUrl) return download(signedUrl).then(resolve).catch(reject);
-        return reject(new Error(`HTTP ${res.statusCode} — ACL denied and no credentials available`));
+      if ((res.statusCode === 401 || res.statusCode === 403) && !isFallback) {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          console.log("[DEBUG] 401 body:", Buffer.concat(chunks).toString().slice(0, 300));
+          const signedUrl = cloudinaryPrivateUrl(url);
+          if (signedUrl) return download(signedUrl, true).then(resolve).catch(reject);
+          reject(new Error(`HTTP ${res.statusCode} — ACL denied and no credentials available`));
+        });
+        return;
       }
       if (res.statusCode !== 200) {
-        return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          reject(new Error(`HTTP ${res.statusCode}: ${Buffer.concat(chunks).toString().slice(0, 200)}`));
+        });
+        return;
       }
       const chunks = [];
       res.on("data", (c) => chunks.push(c));
