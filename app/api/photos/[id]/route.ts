@@ -3,6 +3,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { unlink } from "fs/promises";
+import { join } from "path";
+
+async function deleteFileFromDisk(url: string) {
+  if (!url.startsWith("/uploads/")) return; // skip Cloudinary / external URLs
+  try {
+    await unlink(join(process.cwd(), "public", url));
+  } catch {
+    // File already gone — not an error
+  }
+}
 
 async function getPhotoForUser(photoId: string, userId: string) {
   const photo = await prisma.profilePhoto.findUnique({
@@ -27,6 +38,7 @@ export async function DELETE(
   if (!photo) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.profilePhoto.delete({ where: { id: params.id } });
+  await deleteFileFromDisk(photo.url);
 
   // If deleted photo was the cover, promote the next one
   if (photo.isCover) {

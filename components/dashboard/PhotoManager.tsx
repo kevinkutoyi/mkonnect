@@ -22,42 +22,18 @@ interface Props {
 }
 
 const MAX_PHOTOS = 12;
-const CLOUD_UPLOAD_URL = (cloudName: string) =>
-  `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
 
-// ── Cloudinary upload helper ──────────────────────────────────────────────────
-async function uploadToCloudinary(
-  file: File,
-  folder: string,
-  resourceType: "image" | "video" = "image"
-): Promise<{ url: string; width?: number; height?: number }> {
-  // 1. Get signed params from our server
-  const sigRes = await fetch("/api/upload", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ folder }),
-  });
-  if (!sigRes.ok) throw new Error("Failed to get upload signature");
-  const { signature, timestamp, cloudName, apiKey, folder: signedFolder } = await sigRes.json();
-
-  // 2. Upload directly to Cloudinary
+// ── Server upload helper ──────────────────────────────────────────────────────
+async function uploadToServer(file: File): Promise<{ url: string }> {
   const form = new FormData();
-  form.append("file",       file);
-  form.append("api_key",    apiKey);
-  form.append("timestamp",  String(timestamp));
-  form.append("signature",  signature);
-  form.append("folder",     signedFolder);
+  form.append("file", file);
 
-  const upRes = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
-    { method: "POST", body: form }
-  );
-  if (!upRes.ok) {
-    const err = await upRes.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? "Cloudinary upload failed");
+  const res = await fetch("/api/upload", { method: "POST", body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error ?? "Upload failed");
   }
-  const data = await upRes.json();
-  return { url: data.secure_url, width: data.width, height: data.height };
+  return res.json();
 }
 
 export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
@@ -90,12 +66,12 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
       if (file.size > 10 * 1024 * 1024)   { flash("Each photo must be under 10 MB.", "error"); continue; }
 
       try {
-        const { url, width, height } = await uploadToCloudinary(file, "modelsraha/gallery");
+        const { url } = await uploadToServer(file);
 
         const saveRes = await fetch("/api/photos", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ url, width, height, sizeBytes: file.size }),
+          body:    JSON.stringify({ url, sizeBytes: file.size }),
         });
         if (!saveRes.ok) {
           const err = await saveRes.json();
@@ -161,7 +137,7 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
     setVideoUploading(true);
     setError(null);
     try {
-      const { url } = await uploadToCloudinary(file, "modelsraha/videos", "video");
+      const { url } = await uploadToServer(file);
 
       const saveRes = await fetch("/api/profile/video", {
         method:  "PATCH",

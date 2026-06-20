@@ -3,6 +3,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { unlink } from "fs/promises";
+import { join } from "path";
+
+async function deleteFileFromDisk(url: string | null) {
+  if (!url || !url.startsWith("/uploads/")) return;
+  try { await unlink(join(process.cwd(), "public", url)); } catch {}
+}
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
@@ -11,15 +18,19 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { videoUrl } = await req.json();
-  // Allow null/empty string to clear the video
   const value = videoUrl && typeof videoUrl === "string" ? videoUrl : null;
 
   const profile = await prisma.masseuseProfile.findUnique({
     where:  { userId: session.user.id },
-    select: { id: true },
+    select: { id: true, videoUrl: true },
   });
   if (!profile) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  // Delete old video file from disk if it's being replaced or removed
+  if (profile.videoUrl !== value) {
+    await deleteFileFromDisk(profile.videoUrl);
   }
 
   await prisma.masseuseProfile.update({
