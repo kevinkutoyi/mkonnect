@@ -66,6 +66,7 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
             src={value}
             alt="Profile photo"
             className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/20"
+            onError={() => onChange("")}
           />
           <button
             type="button"
