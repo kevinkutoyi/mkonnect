@@ -1,5 +1,6 @@
 // components/profile/ProfileHeader.tsx
-import Image from "next/image";
+"use client";
+import { useState } from "react";
 import { MapPin, Star, Clock, Globe2 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
@@ -8,17 +9,19 @@ interface Props {
 }
 
 export function ProfileHeader({ profile }: Props) {
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-4">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-muted">
-          {profile.avatarUrl ? (
-            <Image
+          {profile.avatarUrl && !avatarBroken ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={profile.avatarUrl}
               alt={profile.user.name}
-              fill
-              className="object-cover"
-              sizes="96px"
+              className="h-full w-full object-cover"
+              onError={() => setAvatarBroken(true)}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-2xl font-bold text-muted-foreground">

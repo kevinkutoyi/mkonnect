@@ -1,10 +1,6 @@
 "use client";
 // components/dashboard/PhotoManager.tsx
-// Manage gallery photos and profile video from the dashboard.
-// Upload flow: get signed URL from /api/upload → POST to Cloudinary → save URL via /api/photos
-
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import {
   Upload, Trash2, Star, StarOff, Video, X, Loader2, ImageIcon, Play,
 } from "lucide-react";
@@ -231,12 +227,11 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
           >
             {photos.map((photo) => (
               <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl bg-muted">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={photo.url}
                   alt="Gallery photo"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 33vw, 25vw"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
                 {/* Cover badge */}
                 {photo.isCover && (
