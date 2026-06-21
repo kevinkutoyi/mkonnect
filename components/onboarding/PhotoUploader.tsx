@@ -10,14 +10,13 @@ interface PhotoUploaderProps {
   onError?: (msg: string) => void;
 }
 
-const MAX_SIZE_MB = 5;
+const MAX_SIZE_MB   = 5;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const [dragging,  setDragging]  = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const validate = (file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type))
@@ -27,66 +26,31 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
     return null;
   };
 
-  const upload = useCallback(
-    async (file: File) => {
-      const err = validate(file);
-      if (err) { onError?.(err); return; }
+  const upload = useCallback(async (file: File) => {
+    const err = validate(file);
+    if (err) { onError?.(err); return; }
 
-      setUploading(true);
-      setProgress(0);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
 
-      try {
-        // 1. Get signed params from our API
-        const TRANSFORMATION = "c_fill,g_face,w_400,h_400,q_auto,f_auto";
-        const sigRes = await fetch("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            folder: "modelsraha/profiles",
-            transformation: TRANSFORMATION,
-          }),
-        });
-        const { signature, timestamp, cloudName, apiKey, folder } = await sigRes.json();
-
-        // 2. Upload directly to Cloudinary
-        const form = new FormData();
-        form.append("file", file);
-        form.append("api_key", apiKey);
-        form.append("timestamp", timestamp);
-        form.append("signature", signature);
-        form.append("folder", folder);
-        form.append("transformation", TRANSFORMATION);
-
-        const xhr = new XMLHttpRequest();
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
-        };
-
-        const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
-          xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
-          xhr.onload = () => {
-            const data = JSON.parse(xhr.responseText);
-            if (xhr.status === 200) resolve(data);
-            else reject(new Error(data.error?.message ?? "Upload failed"));
-          };
-          xhr.onerror = () => reject(new Error("Network error during upload"));
-          xhr.send(form);
-        });
-
-        onChange(result.secure_url);
-      } catch (e: any) {
-        onError?.(e.message ?? "Upload failed. Please try again.");
-      } finally {
-        setUploading(false);
-        setProgress(0);
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Upload failed");
       }
-    },
-    [onChange, onError]
-  );
+      const { url } = await res.json();
+      onChange(url);
+    } catch (e: any) {
+      onError?.(e.message ?? "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  }, [onChange, onError]);
 
-  const handleFile = (file: File) => upload(file);
-
-  const handleDrop = (e: React.DragEvent) => {
+  const handleFile  = (file: File) => upload(file);
+  const handleDrop  = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
@@ -115,10 +79,9 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
           </button>
         </div>
       ) : (
-        /* Drop zone */
         <div
           onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragOver={(e)  => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           className={`relative mx-auto flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors ${
@@ -129,26 +92,13 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
           onClick={() => inputRef.current?.click()}
         >
           {uploading ? (
-            <div className="flex flex-col items-center gap-1">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-xs font-medium text-primary">{progress}%</span>
-            </div>
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : (
             <>
               <Camera className="h-7 w-7 text-muted-foreground" />
               <span className="mt-1 text-xs text-muted-foreground">Upload photo</span>
             </>
           )}
-        </div>
-      )}
-
-      {/* Upload progress bar */}
-      {uploading && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
         </div>
       )}
 
