@@ -2,7 +2,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatKES } from "@/lib/utils";
-import { CalendarDays, DollarSign, Star, Users } from "lucide-react";
+import { CalendarDays, DollarSign, Star, Users, Images, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import {
   ListingStatusCard,
   type ListingStatus,
@@ -14,6 +15,7 @@ export default async function DashboardPage() {
   const profile = await prisma.masseuseProfile.findUnique({
     where: { userId: session!.user.id },
     include: {
+      _count: { select: { photos: true } },
       bookings: {
         include: { payment: true },
         orderBy: { createdAt: "desc" },
@@ -113,6 +115,27 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Photos & Video quick action */}
+      <Link
+        href="/dashboard/photos"
+        className="flex items-center justify-between rounded-xl border bg-card p-5 hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Images className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold">Photos &amp; Video</p>
+            <p className="text-sm text-muted-foreground">
+              {profile._count.photos === 0
+                ? "No photos yet — add some to attract more clients"
+                : `${profile._count.photos} photo${profile._count.photos !== 1 ? "s" : ""} uploaded`}
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
 
       {/* Recent bookings */}
       {profile.bookings.length > 0 && (
