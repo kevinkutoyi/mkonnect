@@ -132,7 +132,7 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
   // ── Upload video ───────────────────────────────────────────────────────────
   const handleVideoFile = async (file: File) => {
     if (!file.type.startsWith("video/")) { flash("Only video files are allowed.", "error"); return; }
-    if (file.size > 100 * 1024 * 1024)  { flash("Video must be under 100 MB.", "error"); return; }
+    if (file.size > 25 * 1024 * 1024)   { flash("Video must be under 25 MB.", "error"); return; }
 
     setVideoUploading(true);
     setError(null);
@@ -285,7 +285,7 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
           <div>
             <h2 className="text-lg font-semibold">Profile Video</h2>
             <p className="text-sm text-muted-foreground">
-              One short video shown on your profile. Max 100 MB.
+              One short video shown on your profile. Max 25 MB.
             </p>
           </div>
           {!videoUrl && (
@@ -336,7 +336,7 @@ export function PhotoManager({ initialPhotos, initialVideoUrl }: Props) {
                 <Play className="h-10 w-10 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Click to upload a video</p>
-                  <p className="text-sm text-muted-foreground">MP4, MOV, WEBM up to 100 MB</p>
+                  <p className="text-sm text-muted-foreground">MP4, MOV, WEBM up to 25 MB</p>
                 </div>
               </>
             )}

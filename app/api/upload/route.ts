@@ -15,7 +15,7 @@ const ALLOWED_VIDEO = new Set([
 ]);
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;  // 10 MB
-const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
+const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export async function POST(req: NextRequest) {
   const session = await auth();
