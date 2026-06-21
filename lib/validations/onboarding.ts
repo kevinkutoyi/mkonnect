@@ -66,7 +66,6 @@ export const Step2Schema = z.object({
 export const Step3Schema = z.object({
   avatarUrl: z
     .string()
-    .url("Invalid photo URL")
     .optional()
     .or(z.literal("")),
   tagline: z

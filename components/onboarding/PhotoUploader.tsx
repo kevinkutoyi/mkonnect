@@ -1,7 +1,6 @@
 "use client";
 // components/onboarding/PhotoUploader.tsx
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import { Upload, X, Camera, Loader2 } from "lucide-react";
 
 interface PhotoUploaderProps {
@@ -62,12 +61,11 @@ export function PhotoUploader({ value, onChange, onError }: PhotoUploaderProps) 
       {/* Preview */}
       {value ? (
         <div className="relative mx-auto h-32 w-32">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={value}
             alt="Profile photo"
-            fill
-            className="rounded-full object-cover ring-4 ring-primary/20"
-            sizes="128px"
+            className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/20"
           />
           <button
             type="button"
