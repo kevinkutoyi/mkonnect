@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { MasseuseCard } from "./MasseuseCard";
 import { SearchX } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 
 interface Props {
   masseuses: any[];
