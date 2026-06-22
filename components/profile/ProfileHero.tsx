@@ -1,5 +1,6 @@
 // components/profile/ProfileHero.tsx
-import Image from "next/image";
+"use client";
+import { useState } from "react";
 import { MapPin, Star } from "lucide-react";
 import { getInitials }  from "@/lib/utils";
 import { TierBadge }    from "@/components/tiers/TierBadge";
@@ -15,6 +16,9 @@ const CATEGORY_COLOURS = [
 ];
 
 export function ProfileHero({ profile }: { profile: any }) {
+  const [coverBroken, setCoverBroken] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
   const cover = profile.photos?.[0];
   const cats  = profile.categories?.map((c: any) => c.category ?? c) ?? [];
 
@@ -22,14 +26,13 @@ export function ProfileHero({ profile }: { profile: any }) {
     <div className="relative">
       {/* Cover banner */}
       <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background md:h-72">
-        {cover && (
-          <Image
+        {cover && !coverBroken && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={cover.url}
             alt={`${profile.user.name} cover`}
-            fill
-            priority
-            className="object-cover object-center"
-            sizes="100vw"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            onError={() => setCoverBroken(true)}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -40,13 +43,13 @@ export function ProfileHero({ profile }: { profile: any }) {
         <div className="relative -mt-16 flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
           {/* Avatar */}
           <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-lg sm:h-36 sm:w-36">
-            {profile.avatarUrl ? (
-              <Image
+            {profile.avatarUrl && !avatarBroken ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 src={profile.avatarUrl}
                 alt={profile.user.name}
-                fill
-                className="object-cover"
-                sizes="144px"
+                className="h-full w-full object-cover"
+                onError={() => setAvatarBroken(true)}
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/30 to-primary/10">
