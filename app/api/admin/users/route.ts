@@ -29,7 +29,6 @@ export async function GET(req: NextRequest) {
       email:     true,
       role:      true,
       createdAt: true,
-      _count:    { select: { bookings: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 200,

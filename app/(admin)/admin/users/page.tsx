@@ -11,7 +11,6 @@ interface User {
   email:     string;
   role:      Role;
   createdAt: string;
-  _count:    { bookings: number };
 }
 
 const ROLE_BADGE: Record<Role, string> = {
