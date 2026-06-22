@@ -79,20 +79,20 @@ export function ReviewsList({ reviews, avgRating, total }: Props) {
               <div key={review.id} className="rounded-2xl border bg-card p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    {review.client.avatarUrl ? (
+                    {review.client?.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={review.client.avatarUrl}
-                        alt={review.client.name}
+                        alt={review.client.name ?? "User"}
                         className="h-9 w-9 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {getInitials(review.client.name)}
+                        {review.client ? getInitials(review.client.name) : "?"}
                       </div>
                     )}
                     <div>
-                      <p className="text-sm font-semibold">{review.client.name}</p>
+                      <p className="text-sm font-semibold">{review.client?.name ?? "Anonymous"}</p>
                       <StarRating rating={review.ratingOverall} />
                     </div>
                   </div>
