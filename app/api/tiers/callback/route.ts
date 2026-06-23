@@ -1,84 +1,85 @@
 // app/api/tiers/callback/route.ts
-// Pesapal IPN (POST) + browser redirect (GET) handler for tier subscription payments
+// Paystack webhook (POST) + browser redirect (GET) handler for tier subscription payments
 //
-// Pesapal status_code → subscription status → profile listingActive:
-//   1 (Invalid/Pending) → no change (stay PENDING)   → no change
-//   2 (Completed)       → ACTIVE                      → listingActive = true  (if also APPROVED)
-//   3 (Failed)          → FAILED                      → listingActive = false (if no other sub)
-//   4 (Reversed)        → CANCELLED                   → listingActive = false (if no other sub)
+// Paystack status → subscription status → profile listingActive:
+//   "success"   → ACTIVE    → listingActive = true  (if also APPROVED)
+//   "failed"    → FAILED    → listingActive = false
+//   "abandoned" → FAILED    → listingActive = false
+//   "pending"   → PENDING   → no change
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTransactionStatus, PesapalError } from "@/lib/pesapal";
+import { verifyTransaction, verifyWebhookSignature, PaystackError } from "@/lib/paystack";
 import { activateProfile, deactivateProfile } from "@/lib/profile-activation";
 import { notifyPaymentConfirmed, notifyListingActivated } from "@/lib/notifications";
-import type { PesapalStatusCode } from "@/lib/pesapal";
+import type { PaystackStatus } from "@/lib/paystack";
 
-// ── IPN (server-to-server POST from Pesapal) ───────────────────────────────────
+// ── Webhook (server-to-server POST from Paystack) ─────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { orderTrackingId, orderMerchantReference } = body;
+    const rawBody  = await req.text();
+    const signature = req.headers.get("x-paystack-signature") ?? "";
 
-    if (!orderTrackingId || !orderMerchantReference) {
-      return NextResponse.json({ error: "Missing params" }, { status: 400 });
+    // Verify webhook authenticity
+    if (!verifyWebhookSignature(rawBody, signature)) {
+      console.warn("[Paystack Webhook] Invalid signature — rejected");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    await processPayment(orderMerchantReference, orderTrackingId);
+    const event = JSON.parse(rawBody);
 
-    // Pesapal expects this exact shape in response to IPN notifications
-    return NextResponse.json({
-      orderNotificationType:  "IPNCHANGE",
-      orderTrackingId,
-      orderMerchantReference,
-      status:                 "200",
-    });
+    // Only process charge.success events
+    if (event.event !== "charge.success") {
+      return NextResponse.json({ received: true });
+    }
+
+    const reference = event.data?.reference;
+    if (!reference) {
+      return NextResponse.json({ error: "Missing reference" }, { status: 400 });
+    }
+
+    await processPayment(reference);
+    return NextResponse.json({ received: true });
   } catch (err) {
-    console.error("[Tier IPN POST]", err);
-    // Still return 200 — Pesapal retries on non-200; we don't want infinite retries
-    return NextResponse.json({ status: "200", note: "processed with error" });
+    console.error("[Paystack Webhook POST]", err);
+    // Return 200 so Paystack doesn't retry indefinitely
+    return NextResponse.json({ received: true, note: "processed with error" });
   }
 }
 
-// ── Redirect (browser GET after Pesapal payment page) ─────────────────────────
+// ── Redirect (browser GET after Paystack payment page) ───────────────────────
 export async function GET(req: NextRequest) {
-  // Use NEXTAUTH_URL as the base so redirects go to the public domain,
-  // not the internal localhost port that Next.js sees behind a reverse proxy.
   const base = process.env.NEXTAUTH_URL ?? `https://${req.headers.get("host")}`;
-
   const { searchParams } = req.nextUrl;
-  const orderTrackingId   = searchParams.get("OrderTrackingId");
-  const merchantReference = searchParams.get("OrderMerchantReference");
 
-  if (!orderTrackingId || !merchantReference) {
+  // Paystack sends ?reference=xxx&trxref=xxx
+  const reference = searchParams.get("reference") ?? searchParams.get("trxref");
+
+  if (!reference) {
     return NextResponse.redirect(
       new URL("/dashboard/listing?status=failed&reason=missing_params", base)
     );
   }
 
   try {
-    const result = await processPayment(merchantReference, orderTrackingId);
+    const result = await processPayment(reference);
 
     switch (result.outcome) {
       case "ACTIVATED":
         return NextResponse.redirect(
-          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, base)
+          new URL(`/dashboard/listing?status=success&ref=${reference}`, base)
         );
       case "PENDING":
         return NextResponse.redirect(
-          new URL(`/dashboard/listing?status=pending&trackingId=${orderTrackingId}`, base)
+          new URL(`/dashboard/listing?status=pending`, base)
         );
       case "FAILED":
         return NextResponse.redirect(
           new URL("/dashboard/listing?status=failed&reason=payment_failed", base)
         );
-      case "REVERSED":
-        return NextResponse.redirect(
-          new URL("/dashboard/listing?status=failed&reason=reversed", base)
-        );
       case "ALREADY_ACTIVE":
         return NextResponse.redirect(
-          new URL(`/dashboard/listing?status=success&ref=${merchantReference}`, base)
+          new URL(`/dashboard/listing?status=success&ref=${reference}`, base)
         );
       default:
         return NextResponse.redirect(
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
         );
     }
   } catch (err) {
-    console.error("[Tier Callback GET]", err);
+    console.error("[Paystack Callback GET]", err);
     return NextResponse.redirect(
       new URL("/dashboard/listing?status=failed&reason=server_error", base)
     );
@@ -94,23 +95,16 @@ export async function GET(req: NextRequest) {
 }
 
 // ─── Outcome types ────────────────────────────────────────────────────────────
-type ProcessOutcome =
-  | "ACTIVATED"
-  | "PENDING"
-  | "FAILED"
-  | "REVERSED"
-  | "ALREADY_ACTIVE"
-  | "NOT_FOUND";
+type ProcessOutcome = "ACTIVATED" | "PENDING" | "FAILED" | "ALREADY_ACTIVE" | "NOT_FOUND";
 
 // ─── Core payment processor ───────────────────────────────────────────────────
 async function processPayment(
-  merchantReference: string,
-  orderTrackingId:   string
-): Promise<{ outcome: ProcessOutcome; statusCode: PesapalStatusCode | null }> {
+  reference: string
+): Promise<{ outcome: ProcessOutcome }> {
 
-  // ── Load subscription ───────────────────────────────────────────────────────
+  // ── Load subscription by merchantReference ───────────────────────────────────
   const sub = await prisma.profileSubscription.findUnique({
-    where:   { merchantReference },
+    where:   { merchantReference: reference },
     include: {
       tier:    true,
       profile: { select: { slug: true, user: { select: { id: true, name: true, email: true } } } },
@@ -118,143 +112,105 @@ async function processPayment(
   });
 
   if (!sub) {
-    console.warn(`[Pesapal] Subscription not found for ref: ${merchantReference}`);
-    return { outcome: "NOT_FOUND", statusCode: null };
+    console.warn(`[Paystack] Subscription not found for ref: ${reference}`);
+    return { outcome: "NOT_FOUND" };
   }
 
-  // ── Idempotency: already in a terminal state ────────────────────────────────
-  if (sub.status === "ACTIVE") {
-    return { outcome: "ALREADY_ACTIVE", statusCode: 2 };
-  }
-  if (sub.status === "FAILED") {
-    return { outcome: "FAILED", statusCode: null };
-  }
-  if (sub.status === "CANCELLED") {
-    return { outcome: "REVERSED", statusCode: null };
-  }
+  // ── Idempotency: already terminal ───────────────────────────────────────────
+  if (sub.status === "ACTIVE")    return { outcome: "ALREADY_ACTIVE" };
+  if (sub.status === "FAILED")    return { outcome: "FAILED" };
+  if (sub.status === "CANCELLED") return { outcome: "FAILED" };
 
-  // ── Verify with Pesapal ─────────────────────────────────────────────────────
-  let txStatus;
+  // ── Verify with Paystack ─────────────────────────────────────────────────────
+  let tx;
   try {
-    txStatus = await getTransactionStatus(orderTrackingId);
+    tx = await verifyTransaction(reference);
   } catch (err) {
-    if (err instanceof PesapalError) {
-      console.error("[Pesapal] GetTransactionStatus failed:", err.message, "| code:", err.code);
-      // PesaPal returned an error (e.g. order not found, API issue).
-      // Treat as PENDING so the user isn't shown a failure for a payment that may have succeeded.
-      // The IPN POST (server-to-server) will update the subscription when PesaPal processes it.
-      return { outcome: "PENDING", statusCode: null };
+    if (err instanceof PaystackError) {
+      console.error("[Paystack] verifyTransaction failed:", err.message);
+      return { outcome: "PENDING" };
     }
     throw err;
   }
 
-  const code = txStatus.status_code as PesapalStatusCode;
+  // ── State machine ────────────────────────────────────────────────────────────
+  const status = tx.status as PaystackStatus;
 
-  // ── State machine ───────────────────────────────────────────────────────────
-  switch (code) {
-    // 2 = Completed — activate subscription and profile
-    case 2: {
-      const now       = new Date();
-      const expiresAt = new Date(now.getTime() + sub.tier.durationDays * 86_400_000);
+  if (status === "success") {
+    const now       = new Date();
+    const expiresAt = new Date(now.getTime() + sub.tier.durationDays * 86_400_000);
 
-      // Mark subscription ACTIVE and expire any other active subs for this profile
-      await prisma.$transaction([
-        prisma.profileSubscription.update({
-          where: { merchantReference },
-          data: {
-            status:         "ACTIVE",
-            startsAt:       now,
-            expiresAt,
-            paidAt:         now,
-            orderTrackingId,
-          },
+    await prisma.$transaction([
+      prisma.profileSubscription.update({
+        where: { merchantReference: reference },
+        data: {
+          status:   "ACTIVE",
+          startsAt: now,
+          expiresAt,
+          paidAt:   now,
+        },
+      }),
+      // Expire any other active subs for this profile
+      prisma.profileSubscription.updateMany({
+        where: {
+          profileId: sub.profileId,
+          id:        { not: sub.id },
+          status:    "ACTIVE",
+        },
+        data: { status: "EXPIRED" },
+      }),
+    ]);
+
+    const activation = await activateProfile({
+      profileId:     sub.profileId,
+      tierId:        sub.tierId,
+      tierName:      sub.tier.name,
+      searchBoost:   sub.tier.searchBoost,
+      featuredSlots: sub.tier.featuredSlots,
+      expiresAt,
+      reason:        "SUBSCRIPTION_ACTIVATED",
+    });
+
+    console.info(
+      `[Paystack] ACTIVATED — profile ${sub.profileId}, tier ${sub.tier.name}, ` +
+      `listingActive=${activation.listingActive}, expires ${expiresAt.toISOString()}`
+    );
+
+    const user = sub.profile?.user;
+    const slug = sub.profile?.slug ?? "";
+    if (user?.email) {
+      Promise.allSettled([
+        notifyPaymentConfirmed({
+          userId:   user.id,
+          email:    user.email,
+          name:     user.name ?? "there",
+          tierName: sub.tier.displayName ?? sub.tier.name,
+          amount:   sub.amountPaid ? Number(sub.amountPaid) : 0,
+          expiresAt,
         }),
-        prisma.profileSubscription.updateMany({
-          where: {
-            profileId: sub.profileId,
-            id:        { not: sub.id },
-            status:    "ACTIVE",
-          },
-          data: { status: "EXPIRED" },
+        notifyListingActivated({
+          userId:   user.id,
+          email:    user.email,
+          name:     user.name ?? "there",
+          slug,
+          tierName: sub.tier.displayName ?? sub.tier.name,
         }),
-      ]);
-
-      // Activate profile — sets tier fields + evaluates listingActive
-      const activation = await activateProfile({
-        profileId:     sub.profileId,
-        tierId:        sub.tierId,
-        tierName:      sub.tier.name,
-        searchBoost:   sub.tier.searchBoost,
-        featuredSlots: sub.tier.featuredSlots,
-        expiresAt,
-        reason:        "SUBSCRIPTION_ACTIVATED",
-      });
-
-      console.info(
-        `[Pesapal] ACTIVATED — profile ${sub.profileId}, tier ${sub.tier.name}, ` +
-        `listingActive=${activation.listingActive}, expires ${expiresAt.toISOString()}`
-      );
-
-      // ── Notify user (fire-and-forget — never block the IPN response) ────────
-      const user = sub.profile?.user;
-      const slug = sub.profile?.slug ?? "";
-      if (user?.email) {
-        Promise.allSettled([
-          notifyPaymentConfirmed({
-            userId:    user.id,
-            email:     user.email,
-            name:      user.name ?? "there",
-            tierName:  sub.tier.displayName ?? sub.tier.name,
-            amount:    sub.amountPaid ? Number(sub.amountPaid) : 0,
-            expiresAt,
-          }),
-          notifyListingActivated({
-            userId:   user.id,
-            email:    user.email,
-            name:     user.name ?? "there",
-            slug,
-            tierName: sub.tier.displayName ?? sub.tier.name,
-          }),
-        ]).catch(console.error);
-      }
-
-      return { outcome: "ACTIVATED", statusCode: code };
+      ]).catch(console.error);
     }
 
-    // 3 = Failed — mark subscription FAILED, deactivate profile if no other sub
-    case 3: {
-      await prisma.profileSubscription.update({
-        where: { merchantReference },
-        data:  { status: "FAILED", orderTrackingId },
-      });
-
-      await deactivateProfile(sub.profileId, "SUBSCRIPTION_FAILED");
-
-      console.warn(`[Pesapal] FAILED — ref ${merchantReference}, profile ${sub.profileId}`);
-      return { outcome: "FAILED", statusCode: code };
-    }
-
-    // 4 = Reversed (chargeback / refund after completion)
-    case 4: {
-      await prisma.profileSubscription.update({
-        where: { merchantReference },
-        data:  { status: "CANCELLED", orderTrackingId },
-      });
-
-      await deactivateProfile(sub.profileId, "SUBSCRIPTION_CANCELLED");
-
-      console.warn(`[Pesapal] REVERSED — ref ${merchantReference}, profile ${sub.profileId}`);
-      return { outcome: "REVERSED", statusCode: code };
-    }
-
-    // 1 = Invalid / still processing — store tracking ID, leave PENDING
-    case 1:
-    default: {
-      await prisma.profileSubscription.update({
-        where: { merchantReference },
-        data:  { orderTrackingId },
-      });
-      return { outcome: "PENDING", statusCode: code };
-    }
+    return { outcome: "ACTIVATED" };
   }
+
+  if (status === "failed" || status === "abandoned") {
+    await prisma.profileSubscription.update({
+      where: { merchantReference: reference },
+      data:  { status: "FAILED" },
+    });
+    await deactivateProfile(sub.profileId, "SUBSCRIPTION_FAILED");
+    console.warn(`[Paystack] ${status.toUpperCase()} — ref ${reference}, profile ${sub.profileId}`);
+    return { outcome: "FAILED" };
+  }
+
+  // pending or unknown — leave PENDING
+  return { outcome: "PENDING" };
 }

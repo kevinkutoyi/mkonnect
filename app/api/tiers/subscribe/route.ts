@@ -1,11 +1,11 @@
 // app/api/tiers/subscribe/route.ts
-// POST — masseuse initiates a tier subscription payment via Pesapal
+// POST — masseuse initiates a tier subscription payment via Paystack
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SubscribeTierSchema } from "@/lib/validations/tier";
-import { getOrRegisterIPN, submitOrder, PesapalError } from "@/lib/pesapal";
+import { initializeTransaction, PaystackError } from "@/lib/paystack";
 import { generateMerchantRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Load profile ────────────────────────────────────────────────────────────
+  // ── Load profile ─────────────────────────────────────────────────────────────
   const profile = await prisma.masseuseProfile.findUnique({
     where:  { userId: session.user.id },
     select: { id: true },
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Load tier ───────────────────────────────────────────────────────────────
+  // ── Load tier ────────────────────────────────────────────────────────────────
   const tier = await prisma.listingTier.findUnique({
     where: { id: parsed.data.tierId, isActive: true },
   });
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Tier not found or inactive." }, { status: 404 });
   }
 
-  // ── Guard: already has an active subscription on THIS tier ─────────────────
+  // ── Guard: already has an active subscription on THIS tier ──────────────────
   const existing = await prisma.profileSubscription.findFirst({
     where: {
       profileId: profile.id,
@@ -63,26 +63,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Guard: already has a PENDING payment in-flight ──────────────────────────
-  // Allow retry if:
-  //   • No orderTrackingId — payment never reached PesaPal (abandoned) → expire immediately
-  //   • Older than 10 minutes — something went wrong → expire and allow retry
+  // ── Guard: pending payment in the last 10 minutes ───────────────────────────
   const pendingRecent = await prisma.profileSubscription.findFirst({
     where: {
       profileId: profile.id,
       tierId:    tier.id,
       status:    "PENDING",
-      createdAt: { gt: new Date(Date.now() - 10 * 60_000) }, // 10-min window (down from 30)
+      createdAt: { gt: new Date(Date.now() - 10 * 60_000) },
     },
   });
   if (pendingRecent) {
-    // If it never reached PesaPal (no tracking ID), expire it now so we can retry
     if (!pendingRecent.orderTrackingId) {
       await prisma.profileSubscription.update({
         where: { id: pendingRecent.id },
         data:  { status: "FAILED" },
       });
-      // Fall through to create a fresh subscription below
     } else {
       return NextResponse.json(
         { error: "A payment for this plan is already in progress. Please complete it or wait a few minutes." },
@@ -91,7 +86,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Create PENDING subscription record ─────────────────────────────────────
+  // ── Load user billing info ───────────────────────────────────────────────────
+  const user = await prisma.user.findUnique({
+    where:  { id: session.user.id },
+    select: { name: true, email: true },
+  });
+  if (!user?.email) {
+    return NextResponse.json({ error: "Account email is required." }, { status: 400 });
+  }
+
+  // ── Create PENDING subscription record ──────────────────────────────────────
   const merchantReference = generateMerchantRef();
   const pendingSub = await prisma.profileSubscription.create({
     data: {
@@ -103,69 +107,41 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // ── Load user billing info ──────────────────────────────────────────────────
-  const user = await prisma.user.findUnique({
-    where:  { id: session.user.id },
-    select: { name: true, email: true, phone: true },
-  });
-
-  // ── Get (or register) IPN ID — cached after first call ─────────────────────
-  let ipnId: string;
-  try {
-    ipnId = await getOrRegisterIPN();
-  } catch (err) {
-    // Roll back pending record so the user can try again
-    await prisma.profileSubscription.update({
-      where: { id: pendingSub.id },
-      data:  { status: "FAILED" },
-    });
-    console.error("[Subscribe] IPN registration failed:", err);
-    return NextResponse.json(
-      { error: "Payment gateway configuration error. Please try again later." },
-      { status: 502 }
-    );
-  }
-
-  // ── Submit order to Pesapal ─────────────────────────────────────────────────
-  const nameParts = (user?.name ?? "User").split(" ");
+  // ── Initialize Paystack transaction ─────────────────────────────────────────
   const callbackUrl = `${process.env.NEXTAUTH_URL}/api/tiers/callback`;
-  const cancellationUrl = `${process.env.NEXTAUTH_URL}/dashboard/listing?status=cancelled`;
 
   try {
-    const result = await submitOrder({
-      merchantReference,
-      amount:           Number(tier.price),
-      currency:         "KES",
-      description:      `mconnect ${tier.displayName} Listing — ${tier.durationDays} days`,
+    const result = await initializeTransaction({
+      email:       user.email,
+      amountKES:   Number(tier.price),
+      reference:   merchantReference,
       callbackUrl,
-      cancellationUrl,
-      ipnId,
-      billingEmail:     user?.email ?? "",
-      billingPhone:     user?.phone ?? undefined,
-      billingFirstName: nameParts[0],
-      billingLastName:  nameParts.slice(1).join(" ") || nameParts[0],
+      metadata: {
+        profileId:    profile.id,
+        tierId:       tier.id,
+        tierName:     tier.name,
+        customerName: user.name,
+      },
     });
 
-    // Persist Pesapal tracking ID
+    // Store Paystack access code as orderTrackingId
     await prisma.profileSubscription.update({
       where: { id: pendingSub.id },
-      data:  { orderTrackingId: result.order_tracking_id },
+      data:  { orderTrackingId: result.access_code },
     });
 
     return NextResponse.json({
-      redirectUrl:      result.redirect_url,
-      orderTrackingId:  result.order_tracking_id,
-      merchantReference,
+      redirectUrl:      result.authorization_url,
+      reference:        merchantReference,
     });
   } catch (err) {
-    // Mark subscription as FAILED so it doesn't block future attempts
     await prisma.profileSubscription.update({
       where: { id: pendingSub.id },
       data:  { status: "FAILED" },
     });
 
-    if (err instanceof PesapalError) {
-      console.error("[Subscribe] Pesapal error:", err.message, err.code);
+    if (err instanceof PaystackError) {
+      console.error("[Subscribe] Paystack error:", err.message, err.code);
       return NextResponse.json(
         { error: `Payment initiation failed: ${err.message}` },
         { status: 502 }
