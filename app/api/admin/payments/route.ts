@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
       expired:   statsByStatus["EXPIRED"]   ?? { count: 0, revenue: 0 },
       failed:    statsByStatus["FAILED"]    ?? { count: 0, revenue: 0 },
       cancelled: statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
-      totalRevenue: stats.reduce((sum, s) => sum + Number(s._sum.amountPaid ?? 0), 0),
+      // Only confirmed payments (ACTIVE + EXPIRED) count toward revenue
+      totalRevenue: (statsByStatus["ACTIVE"]?.revenue ?? 0) + (statsByStatus["EXPIRED"]?.revenue ?? 0),
     },
   });
 }

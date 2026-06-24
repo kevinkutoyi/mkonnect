@@ -46,7 +46,8 @@ async function getPaymentStats() {
     expired:      map["EXPIRED"]   ?? zero,
     failed:       map["FAILED"]    ?? zero,
     cancelled:    map["CANCELLED"] ?? zero,
-    totalRevenue: byStatus.reduce((s, r) => s + Number(r._sum.amountPaid ?? 0), 0),
+    // Only count confirmed payments (ACTIVE + EXPIRED) — not PENDING/FAILED/CANCELLED
+    totalRevenue: (map["ACTIVE"]?.revenue ?? 0) + (map["EXPIRED"]?.revenue ?? 0),
     last30Days:   Number(recentRevenue._sum.amountPaid ?? 0),
   };
 }
