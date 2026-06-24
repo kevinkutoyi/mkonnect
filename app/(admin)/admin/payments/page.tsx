@@ -13,19 +13,28 @@ export const metadata: Metadata = { title: "Payments — Admin | modelsraha" };
 // Revalidate every 60s so stats are fresh on page load without a full re-deploy
 export const revalidate = 60;
 
+// Exclude admin-granted (free) subscriptions from revenue figures
+const PAID_FILTER = { OR: [{ grantedByAdmin: false }, { grantedByAdmin: null }] } as const;
+
 async function getPaymentStats() {
-  const [byStatus, recentRevenue] = await Promise.all([
-    // Group subscriptions by status
+  const [byStatus, paidRevenue, recentRevenue] = await Promise.all([
+    // Counts across ALL subscriptions (including admin-granted)
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
       _sum:   { amountPaid: true },
     }),
-    // Revenue in last 30 days
+    // Revenue from actual payments only — excludes admin-granted free subs
+    prisma.profileSubscription.aggregate({
+      where: { status: { in: ["ACTIVE", "EXPIRED"] }, ...PAID_FILTER },
+      _sum:  { amountPaid: true },
+    }),
+    // Revenue in last 30 days — paid only
     prisma.profileSubscription.aggregate({
       where: {
-        status:  "ACTIVE",
-        paidAt:  { gte: new Date(Date.now() - 30 * 86_400_000) },
+        status: "ACTIVE",
+        paidAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
+        ...PAID_FILTER,
       },
       _sum: { amountPaid: true },
     }),
@@ -46,8 +55,7 @@ async function getPaymentStats() {
     expired:      map["EXPIRED"]   ?? zero,
     failed:       map["FAILED"]    ?? zero,
     cancelled:    map["CANCELLED"] ?? zero,
-    // Only count confirmed payments (ACTIVE + EXPIRED) — not PENDING/FAILED/CANCELLED
-    totalRevenue: (map["ACTIVE"]?.revenue ?? 0) + (map["EXPIRED"]?.revenue ?? 0),
+    totalRevenue: Number(paidRevenue._sum.amountPaid ?? 0),
     last30Days:   Number(recentRevenue._sum.amountPaid ?? 0),
   };
 }

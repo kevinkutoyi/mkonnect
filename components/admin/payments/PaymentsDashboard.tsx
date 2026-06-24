@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useTransition } from "react";
 import {
   Search, RefreshCw, CheckCircle2, XCircle, Clock,
-  AlertTriangle, ExternalLink, ShieldCheck, Loader2,
+  AlertTriangle, ExternalLink, ShieldCheck, Loader2, TrendingUp, TrendingDown,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -103,6 +103,7 @@ export function PaymentsDashboard({ initialStats }: Props) {
   const [action,  setAction]  = useState<ActionState>({ id: null, type: null, loading: false, result: null });
   const [confirmModal, setConfirmModal] = useState<Subscription | null>(null);
   const [confirmReason, setConfirmReason] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [isPending, startTransition] = useTransition();
 
@@ -156,6 +157,21 @@ export function PaymentsDashboard({ initialStats }: Props) {
       }
     } catch {
       setAction({ id: sub.id, type: "verify", loading: false, result: { outcome: "ERROR", error: "Network error" } });
+    }
+  }
+
+  // ── Toggle revenue inclusion ──────────────────────────────────────────────
+  async function handleToggleRevenue(sub: Subscription) {
+    setTogglingId(sub.id);
+    try {
+      const res  = await fetch(`/api/admin/payments/${sub.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ grantedByAdmin: !sub.grantedByAdmin }),
+      });
+      if (res.ok) fetchData();
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -295,6 +311,8 @@ export function PaymentsDashboard({ initialStats }: Props) {
                 const lastResult  = action.id === sub.id ? action.result : null;
                 const canVerify   = sub.status === "PENDING" && !!sub.orderTrackingId;
                 const canConfirm  = sub.status === "PENDING" || sub.status === "FAILED";
+                const canToggleRevenue = sub.status === "ACTIVE" || sub.status === "EXPIRED";
+                const isToggling  = togglingId === sub.id;
 
                 return (
                   <tr key={sub.id} className="bg-card transition-colors hover:bg-muted/20">
@@ -393,7 +411,26 @@ export function PaymentsDashboard({ initialStats }: Props) {
                             Confirm
                           </button>
                         )}
-                        {!canVerify && !canConfirm && (
+                        {canToggleRevenue && (
+                          <button
+                            onClick={() => handleToggleRevenue(sub)}
+                            disabled={isToggling}
+                            title={sub.grantedByAdmin ? "Currently excluded from revenue — click to include" : "Currently included in revenue — click to exclude"}
+                            className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                              sub.grantedByAdmin
+                                ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+                                : "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-green-950/30 dark:text-green-300"
+                            }`}
+                          >
+                            {isToggling
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : sub.grantedByAdmin
+                                ? <><TrendingUp className="h-3 w-3" /> Include</>
+                                : <><TrendingDown className="h-3 w-3" /> Exclude</>
+                            }
+                          </button>
+                        )}
+                        {!canVerify && !canConfirm && !canToggleRevenue && (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </div>

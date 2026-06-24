@@ -68,12 +68,17 @@ export async function GET(req: NextRequest) {
     prisma.profileSubscription.count({ where }),
   ]);
 
-  // ── Summary stats (always across ALL statuses regardless of filter) ──────────
-  const [stats] = await Promise.all([
+  // ── Summary stats (counts across ALL, revenue from paid only) ───────────────
+  const paidFilter = { OR: [{ grantedByAdmin: false }, { grantedByAdmin: null }] };
+  const [stats, paidRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
       _sum:   { amountPaid: true },
+    }),
+    prisma.profileSubscription.aggregate({
+      where: { status: { in: ["ACTIVE", "EXPIRED"] }, ...paidFilter },
+      _sum:  { amountPaid: true },
     }),
   ]);
 
@@ -93,13 +98,12 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / perPage),
     },
     stats: {
-      pending:   statsByStatus["PENDING"]   ?? { count: 0, revenue: 0 },
-      active:    statsByStatus["ACTIVE"]    ?? { count: 0, revenue: 0 },
-      expired:   statsByStatus["EXPIRED"]   ?? { count: 0, revenue: 0 },
-      failed:    statsByStatus["FAILED"]    ?? { count: 0, revenue: 0 },
-      cancelled: statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
-      // Only confirmed payments (ACTIVE + EXPIRED) count toward revenue
-      totalRevenue: (statsByStatus["ACTIVE"]?.revenue ?? 0) + (statsByStatus["EXPIRED"]?.revenue ?? 0),
+      pending:      statsByStatus["PENDING"]   ?? { count: 0, revenue: 0 },
+      active:       statsByStatus["ACTIVE"]    ?? { count: 0, revenue: 0 },
+      expired:      statsByStatus["EXPIRED"]   ?? { count: 0, revenue: 0 },
+      failed:       statsByStatus["FAILED"]    ?? { count: 0, revenue: 0 },
+      cancelled:    statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
+      totalRevenue: Number(paidRevenue._sum.amountPaid ?? 0),
     },
   });
 }
