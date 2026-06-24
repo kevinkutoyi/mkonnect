@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Payments — Admin | modelsraha" };
 export const revalidate = 60;
 
 // Exclude admin-granted (free) subscriptions from revenue figures
-const PAID_FILTER = { OR: [{ grantedByAdmin: false }, { grantedByAdmin: null }] } as const;
+const PAID_FILTER = { grantedByAdmin: false } as const;
 
 async function getPaymentStats() {
   const [byStatus, paidRevenue, recentRevenue] = await Promise.all([

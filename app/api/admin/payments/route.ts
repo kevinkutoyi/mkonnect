@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   ]);
 
   // ── Summary stats (counts across ALL, revenue from paid only) ───────────────
-  const paidFilter = { OR: [{ grantedByAdmin: false }, { grantedByAdmin: null }] };
+  const paidFilter = { grantedByAdmin: false };
   const [stats, paidRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
