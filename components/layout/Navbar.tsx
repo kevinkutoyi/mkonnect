@@ -48,6 +48,9 @@ export function Navbar() {
           <Link href="/search" className="text-muted-foreground hover:text-foreground transition-colors">
             Browse
           </Link>
+          <Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">
+            Videos
+          </Link>
           {dashboardHref && (
             <Link href={dashboardHref} className="text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
@@ -110,6 +113,7 @@ export function Navbar() {
         <div className="md:hidden border-t bg-background px-6 py-4">
           <div className="flex flex-col gap-4 text-sm">
             <Link href="/search" onClick={() => setMenuOpen(false)}>Browse</Link>
+            <Link href="/videos" onClick={() => setMenuOpen(false)}>Videos</Link>
             {dashboardHref && (
               <Link href={dashboardHref} onClick={() => setMenuOpen(false)}>Dashboard</Link>
             )}

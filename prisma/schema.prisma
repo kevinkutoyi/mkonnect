@@ -270,6 +270,9 @@ model User {
   conversations     Conversation[]    @relation("ClientConversations")
   messagesSent      Message[]         @relation("MessageSender")
 
+  // Premium video unlocks
+  videoUnlocks      VideoUnlock[]
+
   // Self-referral
   referredBy        User?               @relation("Referrals", fields: [referredById], references: [id])
   referrals         User[]              @relation("Referrals")
@@ -401,6 +404,7 @@ model MasseuseProfile {
   contactEvents     ContactEvent[]
   favorites         Favorite[]
   payouts           Payout[]
+  premiumVideos     PremiumVideo[]
 
   @@index([status])
   @@index([listingActive])
@@ -916,4 +920,48 @@ model Payout {
   @@index([periodStart])
   @@index([createdAt])
   @@map("payouts")
+}
+
+// =============================================================================
+// PREMIUM VIDEOS
+// Pay-to-unlock short videos uploaded by models, KSH 100 per unlock
+// =============================================================================
+
+model PremiumVideo {
+  id          String          @id @default(cuid())
+  profileId   String
+  title       String          @db.VarChar(120)
+  description String?         @db.Text
+  videoUrl    String          // /uploads/videos/...
+  price       Decimal         @default(100) @db.Decimal(10, 2)
+  isActive    Boolean         @default(true)
+  unlockCount Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  unlocks VideoUnlock[]
+
+  @@index([profileId])
+  @@index([isActive])
+  @@map("premium_videos")
+}
+
+model VideoUnlock {
+  id         String   @id @default(cuid())
+  videoId    String
+  userId     String
+  reference  String   @unique  // Paystack payment reference
+  status     String   @default("PENDING")  // PENDING | COMPLETED | FAILED
+  amountPaid Decimal  @db.Decimal(10, 2)
+  paidAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  video PremiumVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId],  references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@index([userId])
+  @@index([reference])
+  @@map("video_unlocks")
 }
