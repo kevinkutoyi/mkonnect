@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyTransaction, verifyWebhookSignature, PaystackError } from "@/lib/paystack";
 import { activateProfile, deactivateProfile } from "@/lib/profile-activation";
 import { notifyPaymentConfirmed, notifyListingActivated } from "@/lib/notifications";
+import { processVideoPayment } from "@/lib/video-payment";
 import type { PaystackStatus } from "@/lib/paystack";
 
 // ── Webhook (server-to-server POST from Paystack) ─────────────────────────────
@@ -38,7 +39,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing reference" }, { status: 400 });
     }
 
-    await processPayment(reference);
+    // Route to the correct processor based on payment type
+    const type = event.data?.metadata?.type;
+    if (type === "video_unlock") {
+      await processVideoPayment(reference);
+    } else {
+      await processPayment(reference);
+    }
+
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error("[Paystack Webhook POST]", err);

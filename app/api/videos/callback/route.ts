@@ -4,7 +4,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyTransaction, verifyWebhookSignature, PaystackError } from "@/lib/paystack";
+import { verifyWebhookSignature } from "@/lib/paystack";
+import { processVideoPayment } from "@/lib/video-payment";
 
 // ── GET: browser redirect after payment ──────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -67,42 +68,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ── Core processor ────────────────────────────────────────────────────────────
-async function processVideoPayment(reference: string): Promise<"COMPLETED" | "FAILED" | "PENDING"> {
-  const unlock = await prisma.videoUnlock.findUnique({ where: { reference } });
-  if (!unlock) return "FAILED";
-  if (unlock.status === "COMPLETED") return "COMPLETED";
-  if (unlock.status === "FAILED")    return "FAILED";
-
-  let tx;
-  try {
-    tx = await verifyTransaction(reference);
-  } catch (err) {
-    if (err instanceof PaystackError) return "PENDING";
-    throw err;
-  }
-
-  if (tx.status === "success") {
-    await prisma.$transaction([
-      prisma.videoUnlock.update({
-        where: { reference },
-        data:  { status: "COMPLETED", paidAt: new Date() },
-      }),
-      prisma.premiumVideo.update({
-        where: { id: unlock.videoId },
-        data:  { unlockCount: { increment: 1 } },
-      }),
-    ]);
-    return "COMPLETED";
-  }
-
-  if (tx.status === "failed" || tx.status === "abandoned") {
-    await prisma.videoUnlock.update({
-      where: { reference },
-      data:  { status: "FAILED" },
-    });
-    return "FAILED";
-  }
-
-  return "PENDING";
-}
