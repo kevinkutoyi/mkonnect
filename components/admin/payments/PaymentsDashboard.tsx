@@ -104,6 +104,7 @@ export function PaymentsDashboard({ initialStats }: Props) {
   const [confirmModal, setConfirmModal] = useState<Subscription | null>(null);
   const [confirmReason, setConfirmReason] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [toggleModal, setToggleModal] = useState<Subscription | null>(null);
 
   const [isPending, startTransition] = useTransition();
 
@@ -161,10 +162,13 @@ export function PaymentsDashboard({ initialStats }: Props) {
   }
 
   // ── Toggle revenue inclusion ──────────────────────────────────────────────
-  async function handleToggleRevenue(sub: Subscription) {
+  async function confirmToggleRevenue() {
+    if (!toggleModal) return;
+    const sub = toggleModal;
+    setToggleModal(null);
     setTogglingId(sub.id);
     try {
-      const res  = await fetch(`/api/admin/payments/${sub.id}`, {
+      const res = await fetch(`/api/admin/payments/${sub.id}`, {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ grantedByAdmin: !sub.grantedByAdmin }),
@@ -413,7 +417,7 @@ export function PaymentsDashboard({ initialStats }: Props) {
                         )}
                         {canToggleRevenue && (
                           <button
-                            onClick={() => handleToggleRevenue(sub)}
+                            onClick={() => setToggleModal(sub)}
                             disabled={isToggling}
                             title={sub.grantedByAdmin ? "Currently excluded from revenue — click to include" : "Currently included in revenue — click to exclude"}
                             className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
@@ -464,6 +468,45 @@ export function PaymentsDashboard({ initialStats }: Props) {
             >
               Next →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Revenue toggle confirmation modal ────────────────────────────── */}
+      {toggleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold">
+              {toggleModal.grantedByAdmin ? "Include in revenue?" : "Exclude from revenue?"}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {toggleModal.grantedByAdmin
+                ? <>Are you sure you want to <strong>include</strong> this transaction for <strong>{toggleModal.profile.user.name}</strong> in revenue reporting? This means payment was actually received.</>
+                : <>Are you sure you want to <strong>exclude</strong> this transaction for <strong>{toggleModal.profile.user.name}</strong> from revenue reporting? It will no longer count toward total revenue.</>
+              }
+            </p>
+            <div className="mt-3 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
+              <p><span className="text-muted-foreground">Plan:</span> {toggleModal.tier.displayName}</p>
+              <p><span className="text-muted-foreground">Amount:</span> {toggleModal.amountPaid ? fmt(Number(toggleModal.amountPaid)) : "—"}</p>
+            </div>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                onClick={() => setToggleModal(null)}
+                className="rounded-lg border px-4 py-2 text-sm hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmToggleRevenue}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
+                  toggleModal.grantedByAdmin
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-amber-600 hover:bg-amber-700"
+                }`}
+              >
+                {toggleModal.grantedByAdmin ? "Yes, include it" : "Yes, exclude it"}
+              </button>
+            </div>
           </div>
         </div>
       )}
