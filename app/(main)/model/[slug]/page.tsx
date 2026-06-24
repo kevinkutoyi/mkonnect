@@ -17,6 +17,10 @@ import type { TierName }   from "@prisma/client";
 
 // ── Lazy-load below-the-fold heavy components ─────────────────────────────────
 // PhotoGallery uses lightbox JS; ReviewForm is client-only — both safely deferred
+const PremiumVideoCard = dynamicImport(
+  () => import("@/components/videos/PremiumVideoCard").then((m) => m.PremiumVideoCard),
+  { loading: () => <div className="h-48 animate-pulse rounded-xl bg-muted" /> }
+);
 const PhotoGallery = dynamicImport(
   () => import("@/components/profile/PhotoGallery").then((m) => m.PhotoGallery),
   { loading: () => <div className="h-48 animate-pulse rounded-xl bg-muted" /> }
@@ -46,6 +50,17 @@ async function getMasseuse(slug: string) {
         orderBy: { createdAt: "desc" },
         take:    20,
         include: { client: { select: { name: true, avatarUrl: true } } },
+      },
+      premiumVideos: {
+        where:   { isActive: true },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id:          true,
+          title:       true,
+          description: true,
+          videoUrl:    true,
+          unlockCount: true,
+        },
       },
     },
   });
@@ -149,11 +164,23 @@ export default async function ModelProfilePage({ params }: Props) {
   const [profile, session] = await Promise.all([getMasseuse(params.slug), auth()]);
   if (!profile) notFound();
 
-  const isFavorited = session?.user
-    ? !!(await prisma.favorite.findUnique({
-        where: { userId_profileId: { userId: session.user.id, profileId: profile.id } },
-      }))
-    : false;
+  const [isFavorited, unlockedVideoIds] = await Promise.all([
+    session?.user
+      ? prisma.favorite.findUnique({
+          where: { userId_profileId: { userId: session.user.id, profileId: profile.id } },
+        }).then(Boolean)
+      : Promise.resolve(false),
+    session?.user && profile.premiumVideos.length > 0
+      ? prisma.videoUnlock.findMany({
+          where: {
+            userId:  session.user.id,
+            videoId: { in: profile.premiumVideos.map((v) => v.id) },
+            status:  "COMPLETED",
+          },
+          select: { videoId: true },
+        }).then((rows) => new Set(rows.map((r) => r.videoId)))
+      : Promise.resolve(new Set<string>()),
+  ]);
 
   const isAdmin = session?.user?.role === "ADMIN";
   const isOwner = session?.user?.id === profile.user.id;
@@ -252,6 +279,39 @@ export default async function ModelProfilePage({ params }: Props) {
                   />
                 </section>
               )}
+              {/* Premium Videos */}
+              {profile.premiumVideos.length > 0 && (
+                <section>
+                  <h2 className="mb-4 text-xl font-bold">Premium Videos</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {profile.premiumVideos.map((v) => {
+                      const isUnlocked = unlockedVideoIds.has(v.id);
+                      return (
+                        <PremiumVideoCard
+                          key={v.id}
+                          video={{
+                            id:          v.id,
+                            title:       v.title,
+                            description: v.description,
+                            price:       100,
+                            unlockCount: v.unlockCount,
+                            isUnlocked,
+                            videoUrl:    isUnlocked ? v.videoUrl : null,
+                            profile: {
+                              slug:     profile.slug,
+                              name:     profile.user.name,
+                              avatarUrl: profile.avatarUrl,
+                              city:     profile.city?.name ?? null,
+                            },
+                          }}
+                          isLoggedIn={!!session?.user}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
               <ServicesList services={profile.offeredServices ?? []} />
               <ReviewsList
                 reviews={profile.reviews}

@@ -911,9 +911,10 @@ model Payout {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile  MasseuseProfile @relation(fields: [profileId], references: [id])
-  user     User            @relation(fields: [userId],    references: [id])
-  bookings Booking[]       // bookings included in this payout
+  profile       MasseuseProfile @relation(fields: [profileId], references: [id])
+  user          User            @relation(fields: [userId],    references: [id])
+  bookings      Booking[]       // bookings included in this payout
+  videoUnlocks  VideoUnlock[]   // video unlocks included in this payout
 
   @@index([profileId])
   @@index([status])
@@ -957,11 +958,16 @@ model VideoUnlock {
   paidAt     DateTime?
   createdAt  DateTime @default(now())
 
+  // Payout tracking — set when this unlock is included in a weekly payout
+  payoutId   String?
+  payout     Payout?      @relation(fields: [payoutId], references: [id])
+
   video PremiumVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
   user  User         @relation(fields: [userId],  references: [id], onDelete: Cascade)
 
   @@unique([videoId, userId])
   @@index([userId])
   @@index([reference])
+  @@index([payoutId])
   @@map("video_unlocks")
 }
