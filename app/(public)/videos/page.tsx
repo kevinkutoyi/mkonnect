@@ -33,7 +33,7 @@ export default async function VideosPage({
           city:     { select: { name: true } },
         },
       },
-      _count: { select: { unlocks: true } },
+      _count: { select: { unlocks: { where: { status: "COMPLETED" } } } },
     },
     orderBy: { createdAt: "desc" },
     take:    60,
