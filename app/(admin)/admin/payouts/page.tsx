@@ -10,6 +10,22 @@ import {
 
 type PayoutStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
 
+interface PendingEarning {
+  profileId:     string;
+  bookingsGross: number;
+  unlocksGross:  number;
+  directGross:   number;
+  totalGross:    number;
+  commission:    number;
+  netAmount:     number;
+  profile: {
+    id:          string;
+    slug:        string;
+    payoutPhone: string | null;
+    user:        { name: string; email: string };
+  };
+}
+
 interface Payout {
   id:                 string;
   grossAmount:        string;
@@ -62,13 +78,15 @@ const TABS: { label: string; value: string }[] = [
 ];
 
 export default function AdminPayoutsPage() {
-  const [tab,           setTab]           = useState("");
-  const [payouts,       setPayouts]       = useState<Payout[]>([]);
-  const [summary,       setSummary]       = useState<Summary[]>([]);
-  const [total,         setTotal]         = useState(0);
-  const [loading,       setLoading]       = useState(true);
-  const [retrying,      setRetrying]      = useState<string | null>(null);
-  const [noPhoneModels, setNoPhoneModels] = useState<NoPhoneModel[]>([]);
+  const [tab,             setTab]             = useState("");
+  const [payouts,         setPayouts]         = useState<Payout[]>([]);
+  const [summary,         setSummary]         = useState<Summary[]>([]);
+  const [total,           setTotal]           = useState(0);
+  const [loading,         setLoading]         = useState(true);
+  const [retrying,        setRetrying]        = useState<string | null>(null);
+  const [paying,          setPaying]          = useState<string | null>(null);
+  const [noPhoneModels,   setNoPhoneModels]   = useState<NoPhoneModel[]>([]);
+  const [pendingEarnings, setPendingEarnings] = useState<PendingEarning[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +98,7 @@ export default function AdminPayoutsPage() {
       setSummary(data.summary);
       setTotal(data.total);
       setNoPhoneModels(data.noPhoneModels ?? []);
+      setPendingEarnings(data.pendingEarnings ?? []);
     }
     setLoading(false);
   }, [tab]);
@@ -100,6 +119,22 @@ export default function AdminPayoutsPage() {
       load();
     } else {
       alert(json.error ?? "Retry failed");
+    }
+  }
+
+  async function payNow(profileId: string) {
+    setPaying(profileId);
+    const res  = await fetch("/api/admin/payouts", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ profileId }),
+    });
+    const json = await res.json();
+    setPaying(null);
+    if (res.ok) {
+      load();
+    } else {
+      alert(json.error ?? "Payout failed");
     }
   }
 
@@ -168,6 +203,85 @@ export default function AdminPayoutsPage() {
                 </a>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Models awaiting payout */}
+      {pendingEarnings.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-base font-semibold">
+            Models Awaiting Payout
+            <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+              {pendingEarnings.length}
+            </span>
+          </h2>
+          <div className="overflow-hidden rounded-xl border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Model</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Bookings</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Unlocks (−25%)</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Direct (−10%)</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Platform fee</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Net pay</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {pendingEarnings.map((e) => (
+                  <tr key={e.profileId} className="bg-card hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{e.profile.user.name}</p>
+                      <p className="text-xs text-muted-foreground">{e.profile.user.email}</p>
+                      {e.profile.payoutPhone ? (
+                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">{e.profile.payoutPhone}</p>
+                      ) : (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                          <PhoneMissed className="h-3 w-3" /> No payout number
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {e.bookingsGross > 0 ? formatKES(e.bookingsGross) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {e.unlocksGross > 0 ? formatKES(e.unlocksGross) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {e.directGross > 0 ? formatKES(e.directGross) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-500 text-xs">
+                      −{formatKES(e.commission)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {formatKES(e.netAmount)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {e.profile.payoutPhone ? (
+                        <button
+                          onClick={() => payNow(e.profileId)}
+                          disabled={paying === e.profileId}
+                          className="flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+                        >
+                          {paying === e.profileId ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Send className="h-3 w-3" />
+                          )}
+                          Pay {formatKES(e.netAmount)}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No phone</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

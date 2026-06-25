@@ -13,8 +13,9 @@ import {
 } from "@/lib/mpesa";
 import { z } from "zod";
 
-const COMMISSION_RATE =
-  Number(process.env.PLATFORM_COMMISSION_PERCENT ?? "10") / 100;
+const COMMISSION_RATE   = Number(process.env.PLATFORM_COMMISSION_PERCENT ?? "10") / 100;
+const UNLOCK_COMMISSION = 0.25; // 25% platform cut on video unlocks
+const DIRECT_COMMISSION = 0.10; // 10% platform cut on direct payments
 
 // ── GET /api/admin/payouts ───────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
   const page    = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const perPage = 20;
 
-  const [payouts, total, summary, noPhoneModels] = await Promise.all([
+  const [payouts, total, summary, noPhoneModels, unpaidBookings, unpaidUnlocks, unpaidDirect] = await Promise.all([
     prisma.payout.findMany({
       where:   status ? { status: status as any } : {},
       orderBy: { createdAt: "desc" },
@@ -62,9 +63,83 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { createdAt: "desc" },
     }),
+    // Unpaid completed bookings per profile
+    prisma.booking.groupBy({
+      by:    ["profileId"],
+      where: { status: "COMPLETED", payoutId: null, payment: { status: "COMPLETED" } },
+      _sum:  { totalAmount: true },
+      _count: { id: true },
+    }),
+    // Unpaid video unlocks (profileId is on the video relation — fetch flat)
+    prisma.videoUnlock.findMany({
+      where:  { status: "COMPLETED", payoutId: null },
+      select: { amountPaid: true, video: { select: { profileId: true } } },
+    }),
+    // Unpaid direct payments per profile
+    prisma.directPayment.groupBy({
+      by:    ["profileId"],
+      where: { status: "COMPLETED", payoutId: null },
+      _sum:  { amount: true },
+      _count: { id: true },
+    }),
   ]);
 
-  return NextResponse.json({ payouts, total, page, perPage, summary, noPhoneModels });
+  // ── Merge pending earnings by profileId ───────────────────────────────────
+  const pendingMap = new Map<string, {
+    bookingsGross: number;
+    unlocksGross:  number;
+    directGross:   number;
+  }>();
+
+  const ensure = (pid: string) => {
+    if (!pendingMap.has(pid)) pendingMap.set(pid, { bookingsGross: 0, unlocksGross: 0, directGross: 0 });
+    return pendingMap.get(pid)!;
+  };
+
+  for (const b of unpaidBookings)  ensure(b.profileId).bookingsGross += Number(b._sum.totalAmount ?? 0);
+  for (const u of unpaidUnlocks)   ensure(u.video.profileId).unlocksGross  += Number(u.amountPaid ?? 0);
+  for (const d of unpaidDirect)    ensure(d.profileId).directGross  += Number(d._sum.amount ?? 0);
+
+  // Fetch profile info for models with pending earnings
+  const pendingProfileIds = Array.from(pendingMap.keys());
+  const pendingProfiles   = pendingProfileIds.length > 0
+    ? await prisma.masseuseProfile.findMany({
+        where:  { id: { in: pendingProfileIds } },
+        select: {
+          id:          true,
+          slug:        true,
+          payoutPhone: true,
+          user:        { select: { name: true, email: true } },
+        },
+      })
+    : [];
+
+  const profileById = Object.fromEntries(pendingProfiles.map((p) => [p.id, p]));
+
+  const pendingEarnings = pendingProfileIds
+    .map((pid) => {
+      const e             = pendingMap.get(pid)!;
+      const bookingsNet   = e.bookingsGross * (1 - COMMISSION_RATE);
+      const unlocksNet    = e.unlocksGross  * (1 - UNLOCK_COMMISSION);
+      const directNet     = e.directGross   * (1 - DIRECT_COMMISSION);
+      const totalGross    = e.bookingsGross + e.unlocksGross + e.directGross;
+      const totalNet      = bookingsNet + unlocksNet + directNet;
+      const commission    = totalGross - totalNet;
+      return {
+        profileId:     pid,
+        profile:       profileById[pid] ?? null,
+        bookingsGross: Math.round(e.bookingsGross * 100) / 100,
+        unlocksGross:  Math.round(e.unlocksGross  * 100) / 100,
+        directGross:   Math.round(e.directGross   * 100) / 100,
+        totalGross:    Math.round(totalGross    * 100) / 100,
+        commission:    Math.round(commission    * 100) / 100,
+        netAmount:     Math.round(totalNet      * 100) / 100,
+      };
+    })
+    .filter((e) => e.profile !== null)
+    .sort((a, b) => b.netAmount - a.netAmount);
+
+  return NextResponse.json({ payouts, total, page, perPage, summary, noPhoneModels, pendingEarnings });
 }
 
 // ── POST /api/admin/payouts — trigger manual payout ──────────────────────────
@@ -106,23 +181,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No payout phone registered for this profile" }, { status: 422 });
   }
 
-  // Find unpaid completed bookings
-  const bookings = await prisma.booking.findMany({
-    where: {
-      profileId,
-      status:   "COMPLETED",
-      payoutId: null,
-      payment:  { status: "COMPLETED" },
-    },
-  });
+  // Find all unpaid completed earnings for this profile
+  const [bookings, videoUnlocks, directPayments] = await Promise.all([
+    prisma.booking.findMany({
+      where: { profileId, status: "COMPLETED", payoutId: null, payment: { status: "COMPLETED" } },
+    }),
+    prisma.videoUnlock.findMany({
+      where: { status: "COMPLETED", payoutId: null, video: { profileId } },
+    }),
+    prisma.directPayment.findMany({
+      where: { profileId, status: "COMPLETED", payoutId: null },
+    }),
+  ]);
 
-  if (bookings.length === 0) {
-    return NextResponse.json({ error: "No unpaid completed bookings" }, { status: 422 });
+  if (bookings.length === 0 && videoUnlocks.length === 0 && directPayments.length === 0) {
+    return NextResponse.json({ error: "No unpaid completed earnings for this profile" }, { status: 422 });
   }
 
-  const grossAmount = bookings.reduce((s, b) => s + Number(b.totalAmount), 0);
-  const commission  = Math.round(grossAmount * COMMISSION_RATE * 100) / 100;
-  const netAmount   = Math.round((grossAmount - commission) * 100) / 100;
+  const bookingsGross = bookings.reduce((s, b) => s + Number(b.totalAmount), 0);
+  const unlocksGross  = videoUnlocks.reduce((s, u) => s + Number(u.amountPaid), 0);
+  const directGross   = directPayments.reduce((s, d) => s + Number(d.amount), 0);
+
+  const bookingsNet   = bookingsGross * (1 - COMMISSION_RATE);
+  const unlocksNet    = unlocksGross  * (1 - UNLOCK_COMMISSION);
+  const directNet     = directGross   * (1 - DIRECT_COMMISSION);
+
+  const grossAmount   = Math.round((bookingsGross + unlocksGross + directGross) * 100) / 100;
+  const netAmount     = Math.round((bookingsNet   + unlocksNet   + directNet)   * 100) / 100;
+  const commission    = Math.round((grossAmount   - netAmount)                  * 100) / 100;
 
   let phone: string;
   try {
@@ -148,10 +234,26 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await prisma.booking.updateMany({
-    where: { id: { in: bookings.map((b) => b.id) } },
-    data:  { payoutId: payout.id },
-  });
+  await Promise.all([
+    bookings.length > 0
+      ? prisma.booking.updateMany({
+          where: { id: { in: bookings.map((b) => b.id) } },
+          data:  { payoutId: payout.id },
+        })
+      : Promise.resolve(),
+    videoUnlocks.length > 0
+      ? prisma.videoUnlock.updateMany({
+          where: { id: { in: videoUnlocks.map((u) => u.id) } },
+          data:  { payoutId: payout.id },
+        })
+      : Promise.resolve(),
+    directPayments.length > 0
+      ? prisma.directPayment.updateMany({
+          where: { id: { in: directPayments.map((d) => d.id) } },
+          data:  { payoutId: payout.id },
+        })
+      : Promise.resolve(),
+  ]);
 
   // Send B2C
   try {
