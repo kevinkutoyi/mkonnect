@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   // ── Summary stats (counts across ALL, revenue from paid only) ───────────────
   const paidFilter = { grantedByAdmin: false };
-  const [stats, paidRevenue] = await Promise.all([
+  const [stats, paidRevenue, unlockRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
@@ -78,6 +78,10 @@ export async function GET(req: NextRequest) {
     }),
     prisma.profileSubscription.aggregate({
       where: { status: { in: ["ACTIVE", "EXPIRED"] }, ...paidFilter },
+      _sum:  { amountPaid: true },
+    }),
+    prisma.videoUnlock.aggregate({
+      where: { status: "COMPLETED" },
       _sum:  { amountPaid: true },
     }),
   ]);
@@ -89,6 +93,9 @@ export async function GET(req: NextRequest) {
     ])
   );
 
+  const subscriptionRevenue = Number(paidRevenue._sum.amountPaid ?? 0);
+  const videoRevenue        = Number(unlockRevenue._sum.amountPaid ?? 0);
+
   return NextResponse.json({
     subscriptions,
     pagination: {
@@ -98,12 +105,14 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / perPage),
     },
     stats: {
-      pending:      statsByStatus["PENDING"]   ?? { count: 0, revenue: 0 },
-      active:       statsByStatus["ACTIVE"]    ?? { count: 0, revenue: 0 },
-      expired:      statsByStatus["EXPIRED"]   ?? { count: 0, revenue: 0 },
-      failed:       statsByStatus["FAILED"]    ?? { count: 0, revenue: 0 },
-      cancelled:    statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
-      totalRevenue: Number(paidRevenue._sum.amountPaid ?? 0),
+      pending:             statsByStatus["PENDING"]   ?? { count: 0, revenue: 0 },
+      active:              statsByStatus["ACTIVE"]    ?? { count: 0, revenue: 0 },
+      expired:             statsByStatus["EXPIRED"]   ?? { count: 0, revenue: 0 },
+      failed:              statsByStatus["FAILED"]    ?? { count: 0, revenue: 0 },
+      cancelled:           statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
+      subscriptionRevenue,
+      videoRevenue,
+      totalRevenue:        subscriptionRevenue + videoRevenue,
     },
   });
 }

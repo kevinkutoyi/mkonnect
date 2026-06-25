@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PaymentsDashboard } from "@/components/admin/payments/PaymentsDashboard";
-import { DollarSign, Clock, CheckCircle2, XCircle, TrendingUp, AlertTriangle } from "lucide-react";
+import { DollarSign, Clock, CheckCircle2, XCircle, TrendingUp, AlertTriangle, Video } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Payments — Admin | modelsraha" };
@@ -17,26 +17,33 @@ export const revalidate = 60;
 const PAID_FILTER = { grantedByAdmin: false } as const;
 
 async function getPaymentStats() {
-  const [byStatus, paidRevenue, recentRevenue] = await Promise.all([
-    // Counts across ALL subscriptions (including admin-granted)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+
+  const [byStatus, paidRevenue, recentSubRevenue, unlockRevenue, recentUnlockRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
       _sum:   { amountPaid: true },
     }),
-    // Revenue from actual payments only — excludes admin-granted free subs
+    // Subscription revenue — excludes admin-granted free subs
     prisma.profileSubscription.aggregate({
       where: { status: { in: ["ACTIVE", "EXPIRED"] }, ...PAID_FILTER },
       _sum:  { amountPaid: true },
     }),
-    // Revenue in last 30 days — paid only
+    // Subscription revenue last 30 days
     prisma.profileSubscription.aggregate({
-      where: {
-        status: "ACTIVE",
-        paidAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
-        ...PAID_FILTER,
-      },
-      _sum: { amountPaid: true },
+      where: { status: "ACTIVE", paidAt: { gte: thirtyDaysAgo }, ...PAID_FILTER },
+      _sum:  { amountPaid: true },
+    }),
+    // Video unlock revenue — all time
+    prisma.videoUnlock.aggregate({
+      where: { status: "COMPLETED" },
+      _sum:  { amountPaid: true },
+    }),
+    // Video unlock revenue last 30 days
+    prisma.videoUnlock.aggregate({
+      where: { status: "COMPLETED", paidAt: { gte: thirtyDaysAgo } },
+      _sum:  { amountPaid: true },
     }),
   ]);
 
@@ -49,14 +56,19 @@ async function getPaymentStats() {
 
   const zero = { count: 0, revenue: 0 };
 
+  const subscriptionRevenue = Number(paidRevenue._sum.amountPaid ?? 0);
+  const videoRevenue        = Number(unlockRevenue._sum.amountPaid ?? 0);
+
   return {
-    pending:      map["PENDING"]   ?? zero,
-    active:       map["ACTIVE"]    ?? zero,
-    expired:      map["EXPIRED"]   ?? zero,
-    failed:       map["FAILED"]    ?? zero,
-    cancelled:    map["CANCELLED"] ?? zero,
-    totalRevenue: Number(paidRevenue._sum.amountPaid ?? 0),
-    last30Days:   Number(recentRevenue._sum.amountPaid ?? 0),
+    pending:             map["PENDING"]   ?? zero,
+    active:              map["ACTIVE"]    ?? zero,
+    expired:             map["EXPIRED"]   ?? zero,
+    failed:              map["FAILED"]    ?? zero,
+    cancelled:           map["CANCELLED"] ?? zero,
+    subscriptionRevenue,
+    videoRevenue,
+    totalRevenue:        subscriptionRevenue + videoRevenue,
+    last30Days:          Number(recentSubRevenue._sum.amountPaid ?? 0) + Number(recentUnlockRevenue._sum.amountPaid ?? 0),
   };
 }
 
@@ -79,6 +91,10 @@ export default async function AdminPaymentsPage() {
       color:  "text-green-600 dark:text-green-400",
       bg:     "bg-green-50 dark:bg-green-950/30",
       border: "border-green-200 dark:border-green-800",
+      breakdown: [
+        { label: "Subscriptions", value: fmt(stats.subscriptionRevenue) },
+        { label: "Video unlocks", value: fmt(stats.videoRevenue) },
+      ],
     },
     {
       label:  "Active Subscriptions",
@@ -88,6 +104,7 @@ export default async function AdminPaymentsPage() {
       color:  "text-blue-600 dark:text-blue-400",
       bg:     "bg-blue-50 dark:bg-blue-950/30",
       border: "border-blue-200 dark:border-blue-800",
+      breakdown: null,
     },
     {
       label:  "Pending Payments",
@@ -97,6 +114,7 @@ export default async function AdminPaymentsPage() {
       color:  stats.pending.count > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
       bg:     stats.pending.count > 0 ? "bg-amber-50 dark:bg-amber-950/30" : "bg-card",
       border: stats.pending.count > 0 ? "border-amber-300 dark:border-amber-700" : "border",
+      breakdown: null,
     },
     {
       label:  "Failed Payments",
@@ -106,6 +124,7 @@ export default async function AdminPaymentsPage() {
       color:  stats.failed.count > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
       bg:     "bg-card",
       border: "border",
+      breakdown: null,
     },
   ];
 
@@ -129,7 +148,7 @@ export default async function AdminPaymentsPage() {
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {summaryCards.map(({ label, value, sub, icon: Icon, color, bg, border }) => (
+        {summaryCards.map(({ label, value, sub, icon: Icon, color, bg, border, breakdown }) => (
           <div key={label} className={`rounded-xl border ${border} ${bg} p-5`}>
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{label}</p>
@@ -137,6 +156,16 @@ export default async function AdminPaymentsPage() {
             </div>
             <p className="text-2xl font-bold">{value}</p>
             <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+            {breakdown && (
+              <div className="mt-3 space-y-1 border-t pt-3">
+                {breakdown.map((b) => (
+                  <div key={b.label} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{b.label}</span>
+                    <span className="font-medium">{b.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

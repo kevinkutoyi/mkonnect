@@ -42,12 +42,14 @@ interface Subscription {
 }
 
 interface Stats {
-  pending:      { count: number; revenue: number };
-  active:       { count: number; revenue: number };
-  expired:      { count: number; revenue: number };
-  failed:       { count: number; revenue: number };
-  cancelled:    { count: number; revenue: number };
-  totalRevenue: number;
+  pending:             { count: number; revenue: number };
+  active:              { count: number; revenue: number };
+  expired:             { count: number; revenue: number };
+  failed:              { count: number; revenue: number };
+  cancelled:           { count: number; revenue: number };
+  subscriptionRevenue: number;
+  videoRevenue:        number;
+  totalRevenue:        number;
 }
 
 interface ApiResponse {
@@ -208,15 +210,29 @@ export function PaymentsDashboard({ initialStats }: Props) {
     <div className="space-y-6">
       {/* ── Stats strip ───────────────────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Revenue — with breakdown */}
+        <div className="rounded-xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Total Revenue</p>
+          <p className="mt-1 text-xl font-bold">{fmt(stats.totalRevenue)}</p>
+          <div className="mt-2 space-y-1 border-t pt-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Subscriptions</span>
+              <span className="font-medium">{fmt(stats.subscriptionRevenue)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Video unlocks</span>
+              <span className="font-medium">{fmt(stats.videoRevenue)}</span>
+            </div>
+          </div>
+        </div>
         {[
-          { label: "Total Revenue",       value: fmt(stats.totalRevenue),            highlight: true  },
-          { label: "Active Subscriptions",value: stats.active.count,                 highlight: false },
-          { label: "Pending Payments",    value: stats.pending.count,                highlight: stats.pending.count > 0 },
-          { label: "Failed Payments",     value: stats.failed.count,                 highlight: stats.failed.count > 0  },
+          { label: "Active Subscriptions", value: stats.active.count,  highlight: false },
+          { label: "Pending Payments",     value: stats.pending.count, highlight: stats.pending.count > 0 },
+          { label: "Failed Payments",      value: stats.failed.count,  highlight: stats.failed.count > 0  },
         ].map(({ label, value, highlight }) => (
           <div
             key={label}
-            className={`rounded-xl border p-4 ${highlight && typeof value === "number" && value > 0 ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30" : "bg-card"}`}
+            className={`rounded-xl border p-4 ${highlight && value > 0 ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30" : "bg-card"}`}
           >
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="mt-1 text-xl font-bold">{value}</p>
