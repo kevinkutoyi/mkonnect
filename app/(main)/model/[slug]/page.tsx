@@ -14,6 +14,7 @@ import { ContactBar }      from "@/components/contact/ContactBar";
 import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
 import { FavoriteButton }   from "@/components/favorites/FavoriteButton";
 import { PayButton }        from "@/components/profile/PayButton";
+import { EarningsCard }     from "@/components/profile/EarningsCard";
 import type { TierName }   from "@prisma/client";
 
 // ── Lazy-load below-the-fold heavy components ─────────────────────────────────
@@ -192,6 +193,26 @@ export default async function ModelProfilePage({ params }: Props) {
 
   const profileVisible = profile.status === "APPROVED" && profile.listingActive;
 
+  // Earnings — fetched only for the owner
+  const earnings = isOwner
+    ? await Promise.all([
+        prisma.videoUnlock.aggregate({
+          where: {
+            status: "COMPLETED",
+            video:  { profileId: profile.id },
+          },
+          _sum: { amountPaid: true },
+        }),
+        prisma.directPayment.aggregate({
+          where: { profileId: profile.id, status: "COMPLETED" },
+          _sum:  { amount: true },
+        }),
+      ]).then(([unlocks, direct]) => ({
+        unlockGross: Number(unlocks._sum.amountPaid ?? 0),
+        directGross: Number(direct._sum.amount    ?? 0),
+      }))
+    : null;
+
   return (
     <>
       <JsonLd profile={profile} />
@@ -249,6 +270,11 @@ export default async function ModelProfilePage({ params }: Props) {
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Left column */}
             <div className="space-y-10 lg:col-span-2">
+              {/* Earnings — owner only */}
+              {isOwner && earnings && (
+                <EarningsCard data={earnings} />
+              )}
+
               <ProfileBio profile={profile} />
 
               {/* Service settings — where the model works */}
