@@ -49,6 +49,7 @@ interface Stats {
   cancelled:           { count: number; revenue: number };
   subscriptionRevenue: number;
   videoRevenue:        number;
+  directRevenue:       number;
   totalRevenue:        number;
 }
 
@@ -222,6 +223,10 @@ export function PaymentsDashboard({ initialStats }: Props) {
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Video unlocks</span>
               <span className="font-medium">{fmt(stats.videoRevenue)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Direct payments</span>
+              <span className="font-medium">{fmt(stats.directRevenue)}</span>
             </div>
           </div>
         </div>

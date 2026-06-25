@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
   const periodEnd   = now;
   const periodStart = new Date(now.getTime() - 7 * 86_400_000);
 
-  // ── Find completed bookings not yet in a payout ───────────────────────────
-  const [bookings, videoUnlocks] = await Promise.all([
+  // ── Find completed bookings / unlocks / direct payments not yet in a payout ──
+  const [bookings, videoUnlocks, directPayments] = await Promise.all([
     prisma.booking.findMany({
       where: {
         status:      "COMPLETED",
@@ -86,13 +86,29 @@ export async function GET(req: NextRequest) {
         },
       },
     }),
+    prisma.directPayment.findMany({
+      where: {
+        status:   "COMPLETED",
+        payoutId: null,
+        paidAt:   { gte: periodStart, lt: periodEnd },
+      },
+      include: {
+        profile: {
+          select: {
+            id:          true,
+            payoutPhone: true,
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    }),
   ]);
 
-  if (bookings.length === 0 && videoUnlocks.length === 0) {
+  if (bookings.length === 0 && videoUnlocks.length === 0 && directPayments.length === 0) {
     return NextResponse.json({
       ok:       true,
       payouts:  0,
-      message:  "No completed bookings or video unlocks to pay out",
+      message:  "No completed bookings, video unlocks, or direct payments to pay out",
       duration: Date.now() - start,
     });
   }
@@ -101,28 +117,30 @@ export async function GET(req: NextRequest) {
   const byProfile = new Map<
     string,
     {
-      profileId:      string;
-      userId:         string;
-      name:           string;
-      email:          string;
-      payoutPhone:    string | null;
-      bookingIds:     string[];
-      videoUnlockIds: string[];
-      grossAmount:    number;
+      profileId:        string;
+      userId:           string;
+      name:             string;
+      email:            string;
+      payoutPhone:      string | null;
+      bookingIds:       string[];
+      videoUnlockIds:   string[];
+      directPaymentIds: string[];
+      grossAmount:      number;
     }
   >();
 
   const ensureEntry = (profile: { id: string; payoutPhone: string | null; user: { id: string; name: string; email: string } }) => {
     if (!byProfile.has(profile.id)) {
       byProfile.set(profile.id, {
-        profileId:      profile.id,
-        userId:         profile.user.id,
-        name:           profile.user.name,
-        email:          profile.user.email,
-        payoutPhone:    profile.payoutPhone,
-        bookingIds:     [],
-        videoUnlockIds: [],
-        grossAmount:    0,
+        profileId:        profile.id,
+        userId:           profile.user.id,
+        name:             profile.user.name,
+        email:            profile.user.email,
+        payoutPhone:      profile.payoutPhone,
+        bookingIds:       [],
+        videoUnlockIds:   [],
+        directPaymentIds: [],
+        grossAmount:      0,
       });
     }
     return byProfile.get(profile.id)!;
@@ -140,29 +158,37 @@ export async function GET(req: NextRequest) {
     entry.grossAmount += Number(u.amountPaid);
   }
 
+  for (const d of directPayments) {
+    const entry = ensureEntry(d.profile);
+    entry.directPaymentIds.push(d.id);
+    entry.grossAmount += Number(d.amount);
+  }
+
   // ── Process each masseuse ─────────────────────────────────────────────────
   const results: Array<{
-    profileId:      string;
-    name:           string;
-    netAmount:      number;
-    bookings:       number;
-    videoUnlocks:   number;
-    status:         string;
-    payoutId?:      string;
-    error?:         string;
+    profileId:        string;
+    name:             string;
+    netAmount:        number;
+    bookings:         number;
+    videoUnlocks:     number;
+    directPayments:   number;
+    status:           string;
+    payoutId?:        string;
+    error?:           string;
   }> = [];
 
   for (const entry of Array.from(byProfile.values())) {
     // Skip if no payout phone registered
     if (!entry.payoutPhone) {
       results.push({
-        profileId:    entry.profileId,
-        name:         entry.name,
-        netAmount:    0,
-        bookings:     entry.bookingIds.length,
-        videoUnlocks: entry.videoUnlockIds.length,
-        status:       "SKIPPED_NO_PHONE",
-        error:        "No payout phone registered",
+        profileId:      entry.profileId,
+        name:           entry.name,
+        netAmount:      0,
+        bookings:       entry.bookingIds.length,
+        videoUnlocks:   entry.videoUnlockIds.length,
+        directPayments: entry.directPaymentIds.length,
+        status:         "SKIPPED_NO_PHONE",
+        error:          "No payout phone registered",
       });
       continue;
     }
@@ -173,13 +199,14 @@ export async function GET(req: NextRequest) {
 
     if (netAmount < 1) {
       results.push({
-        profileId:    entry.profileId,
-        name:         entry.name,
+        profileId:      entry.profileId,
+        name:           entry.name,
         netAmount,
-        bookings:     entry.bookingIds.length,
-        videoUnlocks: entry.videoUnlockIds.length,
-        status:       "SKIPPED_BELOW_MINIMUM",
-        error:        "Net amount below KES 1",
+        bookings:       entry.bookingIds.length,
+        videoUnlocks:   entry.videoUnlockIds.length,
+        directPayments: entry.directPaymentIds.length,
+        status:         "SKIPPED_BELOW_MINIMUM",
+        error:          "Net amount below KES 1",
       });
       continue;
     }
@@ -190,13 +217,14 @@ export async function GET(req: NextRequest) {
       phone = normaliseMpesaPhone(entry.payoutPhone);
     } catch {
       results.push({
-        profileId:    entry.profileId,
-        name:         entry.name,
+        profileId:      entry.profileId,
+        name:           entry.name,
         netAmount,
-        bookings:     entry.bookingIds.length,
-        videoUnlocks: entry.videoUnlockIds.length,
-        status:       "SKIPPED_INVALID_PHONE",
-        error:        `Invalid phone: ${entry.payoutPhone}`,
+        bookings:       entry.bookingIds.length,
+        videoUnlocks:   entry.videoUnlockIds.length,
+        directPayments: entry.directPaymentIds.length,
+        status:         "SKIPPED_INVALID_PHONE",
+        error:          `Invalid phone: ${entry.payoutPhone}`,
       });
       continue;
     }
@@ -216,7 +244,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Tag bookings and video unlocks with this payout
+    // Tag bookings, video unlocks, and direct payments with this payout
     await Promise.all([
       entry.bookingIds.length > 0
         ? prisma.booking.updateMany({
@@ -227,6 +255,12 @@ export async function GET(req: NextRequest) {
       entry.videoUnlockIds.length > 0
         ? prisma.videoUnlock.updateMany({
             where: { id: { in: entry.videoUnlockIds } },
+            data:  { payoutId: payout.id },
+          })
+        : Promise.resolve(),
+      entry.directPaymentIds.length > 0
+        ? prisma.directPayment.updateMany({
+            where: { id: { in: entry.directPaymentIds } },
             data:  { payoutId: payout.id },
           })
         : Promise.resolve(),
@@ -252,18 +286,19 @@ export async function GET(req: NextRequest) {
       });
 
       results.push({
-        profileId:    entry.profileId,
-        name:         entry.name,
+        profileId:      entry.profileId,
+        name:           entry.name,
         netAmount,
-        bookings:     entry.bookingIds.length,
-        videoUnlocks: entry.videoUnlockIds.length,
-        status:       "PROCESSING",
-        payoutId:     payout.id,
+        bookings:       entry.bookingIds.length,
+        videoUnlocks:   entry.videoUnlockIds.length,
+        directPayments: entry.directPaymentIds.length,
+        status:         "PROCESSING",
+        payoutId:       payout.id,
       });
 
       console.info(
         `[WeeklyPayout] ${entry.name} — KES ${netAmount} → ${phone} ` +
-        `(bookings=${entry.bookingIds.length}, videos=${entry.videoUnlockIds.length}, conv=${b2c.conversationId})`
+        `(bookings=${entry.bookingIds.length}, videos=${entry.videoUnlockIds.length}, direct=${entry.directPaymentIds.length}, conv=${b2c.conversationId})`
       );
     } catch (err) {
       const msg = err instanceof MpesaError ? err.message : String(err);
@@ -273,14 +308,15 @@ export async function GET(req: NextRequest) {
       });
 
       results.push({
-        profileId:    entry.profileId,
-        name:         entry.name,
+        profileId:      entry.profileId,
+        name:           entry.name,
         netAmount,
-        bookings:     entry.bookingIds.length,
-        videoUnlocks: entry.videoUnlockIds.length,
-        status:       "FAILED",
-        payoutId:     payout.id,
-        error:        msg,
+        bookings:       entry.bookingIds.length,
+        videoUnlocks:   entry.videoUnlockIds.length,
+        directPayments: entry.directPaymentIds.length,
+        status:         "FAILED",
+        payoutId:       payout.id,
+        error:          msg,
       });
 
       console.error(`[WeeklyPayout] Failed for ${entry.name}:`, msg);
@@ -292,16 +328,17 @@ export async function GET(req: NextRequest) {
   const skipped    = results.filter((r) => r.status.startsWith("SKIPPED")).length;
 
   return NextResponse.json({
-    ok:           failed === 0,
-    periodStart:  periodStart.toISOString(),
-    periodEnd:    periodEnd.toISOString(),
-    bookings:     bookings.length,
-    videoUnlocks: videoUnlocks.length,
-    masseuses:    byProfile.size,
+    ok:             failed === 0,
+    periodStart:    periodStart.toISOString(),
+    periodEnd:      periodEnd.toISOString(),
+    bookings:       bookings.length,
+    videoUnlocks:   videoUnlocks.length,
+    directPayments: directPayments.length,
+    masseuses:      byProfile.size,
     processing,
     failed,
     skipped,
-    duration:     Date.now() - start,
+    duration:       Date.now() - start,
     results,
   });
 }

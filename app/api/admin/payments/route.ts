@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   // ── Summary stats (counts across ALL, revenue from paid only) ───────────────
   const paidFilter = { grantedByAdmin: false };
-  const [stats, paidRevenue, unlockRevenue] = await Promise.all([
+  const [stats, paidRevenue, unlockRevenue, directRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
@@ -84,6 +84,10 @@ export async function GET(req: NextRequest) {
       where: { status: "COMPLETED" },
       _sum:  { amountPaid: true },
     }),
+    prisma.directPayment.aggregate({
+      where: { status: "COMPLETED" },
+      _sum:  { amount: true },
+    }),
   ]);
 
   const statsByStatus = Object.fromEntries(
@@ -95,6 +99,7 @@ export async function GET(req: NextRequest) {
 
   const subscriptionRevenue = Number(paidRevenue._sum.amountPaid ?? 0);
   const videoRevenue        = Number(unlockRevenue._sum.amountPaid ?? 0);
+  const directRevenue_      = Number(directRevenue._sum.amount ?? 0);
 
   return NextResponse.json({
     subscriptions,
@@ -112,7 +117,8 @@ export async function GET(req: NextRequest) {
       cancelled:           statsByStatus["CANCELLED"] ?? { count: 0, revenue: 0 },
       subscriptionRevenue,
       videoRevenue,
-      totalRevenue:        subscriptionRevenue + videoRevenue,
+      directRevenue:       directRevenue_,
+      totalRevenue:        subscriptionRevenue + videoRevenue + directRevenue_,
     },
   });
 }

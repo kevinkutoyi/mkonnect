@@ -19,7 +19,7 @@ const PAID_FILTER = { grantedByAdmin: false } as const;
 async function getPaymentStats() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
 
-  const [byStatus, paidRevenue, recentSubRevenue, unlockRevenue, recentUnlockRevenue] = await Promise.all([
+  const [byStatus, paidRevenue, recentSubRevenue, unlockRevenue, recentUnlockRevenue, directRevenue, recentDirectRevenue] = await Promise.all([
     prisma.profileSubscription.groupBy({
       by:     ["status"],
       _count: { _all: true },
@@ -45,6 +45,16 @@ async function getPaymentStats() {
       where: { status: "COMPLETED", paidAt: { gte: thirtyDaysAgo } },
       _sum:  { amountPaid: true },
     }),
+    // Direct payment revenue — all time
+    prisma.directPayment.aggregate({
+      where: { status: "COMPLETED" },
+      _sum:  { amount: true },
+    }),
+    // Direct payment revenue last 30 days
+    prisma.directPayment.aggregate({
+      where: { status: "COMPLETED", paidAt: { gte: thirtyDaysAgo } },
+      _sum:  { amount: true },
+    }),
   ]);
 
   const map = Object.fromEntries(
@@ -58,6 +68,7 @@ async function getPaymentStats() {
 
   const subscriptionRevenue = Number(paidRevenue._sum.amountPaid ?? 0);
   const videoRevenue        = Number(unlockRevenue._sum.amountPaid ?? 0);
+  const directRevenue_      = Number(directRevenue._sum.amount ?? 0);
 
   return {
     pending:             map["PENDING"]   ?? zero,
@@ -67,8 +78,11 @@ async function getPaymentStats() {
     cancelled:           map["CANCELLED"] ?? zero,
     subscriptionRevenue,
     videoRevenue,
-    totalRevenue:        subscriptionRevenue + videoRevenue,
-    last30Days:          Number(recentSubRevenue._sum.amountPaid ?? 0) + Number(recentUnlockRevenue._sum.amountPaid ?? 0),
+    directRevenue:       directRevenue_,
+    totalRevenue:        subscriptionRevenue + videoRevenue + directRevenue_,
+    last30Days:          Number(recentSubRevenue._sum.amountPaid ?? 0)
+                       + Number(recentUnlockRevenue._sum.amountPaid ?? 0)
+                       + Number(recentDirectRevenue._sum.amount ?? 0),
   };
 }
 
@@ -92,8 +106,9 @@ export default async function AdminPaymentsPage() {
       bg:     "bg-green-50 dark:bg-green-950/30",
       border: "border-green-200 dark:border-green-800",
       breakdown: [
-        { label: "Subscriptions", value: fmt(stats.subscriptionRevenue) },
-        { label: "Video unlocks", value: fmt(stats.videoRevenue) },
+        { label: "Subscriptions",    value: fmt(stats.subscriptionRevenue) },
+        { label: "Video unlocks",    value: fmt(stats.videoRevenue) },
+        { label: "Direct payments",  value: fmt(stats.directRevenue) },
       ],
     },
     {

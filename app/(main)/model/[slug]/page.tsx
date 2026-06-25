@@ -13,6 +13,7 @@ import { BookingSidebar }  from "@/components/profile/BookingSidebar";
 import { ContactBar }      from "@/components/contact/ContactBar";
 import { PresenceHeartbeat } from "@/components/contact/PresenceHeartbeat";
 import { FavoriteButton }   from "@/components/favorites/FavoriteButton";
+import { PayButton }        from "@/components/profile/PayButton";
 import type { TierName }   from "@prisma/client";
 
 // ── Lazy-load below-the-fold heavy components ─────────────────────────────────
@@ -224,6 +225,13 @@ export default async function ModelProfilePage({ params }: Props) {
               initialSaved={isFavorited}
               isLoggedIn={!!session?.user}
             />
+            {!isOwner && !isAdmin && (
+              <PayButton
+                slug={profile.slug}
+                modelName={profile.user.name}
+                isLoggedIn={!!session?.user}
+              />
+            )}
             <ContactBar
             profile={{
               id:       profile.id,

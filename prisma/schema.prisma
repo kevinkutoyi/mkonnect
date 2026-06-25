@@ -273,6 +273,9 @@ model User {
   // Premium video unlocks
   videoUnlocks      VideoUnlock[]
 
+  // Direct payments to models
+  directPayments    DirectPayment[]
+
   // Self-referral
   referredBy        User?               @relation("Referrals", fields: [referredById], references: [id])
   referrals         User[]              @relation("Referrals")
@@ -405,6 +408,7 @@ model MasseuseProfile {
   favorites         Favorite[]
   payouts           Payout[]
   premiumVideos     PremiumVideo[]
+  directPayments    DirectPayment[]
 
   @@index([status])
   @@index([listingActive])
@@ -911,10 +915,11 @@ model Payout {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile       MasseuseProfile @relation(fields: [profileId], references: [id])
-  user          User            @relation(fields: [userId],    references: [id])
-  bookings      Booking[]       // bookings included in this payout
-  videoUnlocks  VideoUnlock[]   // video unlocks included in this payout
+  profile        MasseuseProfile @relation(fields: [profileId], references: [id])
+  user           User            @relation(fields: [userId],    references: [id])
+  bookings       Booking[]       // bookings included in this payout
+  videoUnlocks   VideoUnlock[]   // video unlocks included in this payout
+  directPayments DirectPayment[] // direct client payments included in this payout
 
   @@index([profileId])
   @@index([status])
@@ -970,4 +975,33 @@ model VideoUnlock {
   @@index([reference])
   @@index([payoutId])
   @@map("video_unlocks")
+}
+
+// =============================================================================
+// DIRECT PAYMENTS
+// Clients pay models directly from their profile page via Paystack
+// =============================================================================
+
+model DirectPayment {
+  id         String    @id @default(cuid())
+  profileId  String
+  userId     String?   // null = not logged in
+  reference  String    @unique  // Paystack payment reference
+  amount     Decimal   @db.Decimal(10, 2)
+  status     String    @default("PENDING")  // PENDING | COMPLETED | FAILED
+  payerEmail String
+  payerName  String?
+  message    String?   @db.Text  // optional note from client
+  paidAt     DateTime?
+  payoutId   String?   // set when included in a weekly payout
+
+  profile MasseuseProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User?           @relation(fields: [userId],    references: [id], onDelete: SetNull)
+  payout  Payout?         @relation(fields: [payoutId],  references: [id])
+
+  @@index([profileId])
+  @@index([userId])
+  @@index([reference])
+  @@index([payoutId])
+  @@map("direct_payments")
 }
