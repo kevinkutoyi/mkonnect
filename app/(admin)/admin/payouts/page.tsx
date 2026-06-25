@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { formatKES } from "@/lib/utils";
 import {
   CheckCircle2, Clock, XCircle, Loader2, RefreshCw,
-  BanknoteIcon, TrendingUp, AlertTriangle, Send,
+  BanknoteIcon, TrendingUp, AlertTriangle, Send, PhoneMissed,
 } from "lucide-react";
 
 type PayoutStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
@@ -26,10 +26,17 @@ interface Payout {
   processedAt:        string | null;
   createdAt:          string;
   profile: {
-    id:   string;
-    slug: string;
-    user: { name: string; email: string };
+    id:          string;
+    slug:        string;
+    payoutPhone: string | null;
+    user:        { name: string; email: string };
   };
+}
+
+interface NoPhoneModel {
+  id:   string;
+  slug: string;
+  user: { name: string; email: string };
 }
 
 interface Summary {
@@ -55,12 +62,13 @@ const TABS: { label: string; value: string }[] = [
 ];
 
 export default function AdminPayoutsPage() {
-  const [tab,      setTab]      = useState("");
-  const [payouts,  setPayouts]  = useState<Payout[]>([]);
-  const [summary,  setSummary]  = useState<Summary[]>([]);
-  const [total,    setTotal]    = useState(0);
-  const [loading,  setLoading]  = useState(true);
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [tab,           setTab]           = useState("");
+  const [payouts,       setPayouts]       = useState<Payout[]>([]);
+  const [summary,       setSummary]       = useState<Summary[]>([]);
+  const [total,         setTotal]         = useState(0);
+  const [loading,       setLoading]       = useState(true);
+  const [retrying,      setRetrying]      = useState<string | null>(null);
+  const [noPhoneModels, setNoPhoneModels] = useState<NoPhoneModel[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +79,7 @@ export default function AdminPayoutsPage() {
       setPayouts(data.payouts);
       setSummary(data.summary);
       setTotal(data.total);
+      setNoPhoneModels(data.noPhoneModels ?? []);
     }
     setLoading(false);
   }, [tab]);
@@ -132,6 +141,36 @@ export default function AdminPayoutsPage() {
           <p className="text-2xl font-bold">{failedCount}</p>
         </div>
       </div>
+
+      {/* No payout phone warning */}
+      {noPhoneModels.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <PhoneMissed className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {noPhoneModels.length} active model{noPhoneModels.length !== 1 ? "s" : ""} with no payout number
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {noPhoneModels.map((m) => (
+              <div key={m.id} className="flex items-center justify-between rounded-lg bg-white/60 dark:bg-black/20 px-3 py-2 text-sm">
+                <div>
+                  <span className="font-medium">{m.user.name}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{m.user.email}</span>
+                </div>
+                <a
+                  href={`/model/${m.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline"
+                >
+                  View profile →
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs + refresh */}
       <div className="flex items-center justify-between gap-3">
@@ -195,6 +234,13 @@ export default function AdminPayoutsPage() {
                       <td className="px-4 py-3">
                         <p className="font-medium">{p.profile.user.name}</p>
                         <p className="text-xs text-muted-foreground">{p.profile.user.email}</p>
+                        {p.profile.payoutPhone ? (
+                          <p className="text-xs font-mono text-muted-foreground mt-0.5">{p.profile.payoutPhone}</p>
+                        ) : (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-0.5">
+                            <PhoneMissed className="h-3 w-3" /> No payout number
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         <div>{new Date(p.periodStart).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}</div>

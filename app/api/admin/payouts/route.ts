@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const page    = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const perPage = 20;
 
-  const [payouts, total] = await Promise.all([
+  const [payouts, total, summary, noPhoneModels] = await Promise.all([
     prisma.payout.findMany({
       where:   status ? { status: status as any } : {},
       orderBy: { createdAt: "desc" },
@@ -37,24 +37,34 @@ export async function GET(req: NextRequest) {
       include: {
         profile: {
           select: {
-            id:   true,
-            slug: true,
-            user: { select: { name: true, email: true } },
+            id:          true,
+            slug:        true,
+            payoutPhone: true,
+            user:        { select: { name: true, email: true } },
           },
         },
       },
     }),
     prisma.payout.count({ where: status ? { status: status as any } : {} }),
+    // Payout totals summary
+    prisma.payout.groupBy({
+      by:     ["status"],
+      _sum:   { netAmount: true },
+      _count: { id: true },
+    }),
+    // APPROVED models with no payout phone — can't receive payouts
+    prisma.masseuseProfile.findMany({
+      where:  { status: "APPROVED", listingActive: true, payoutPhone: null },
+      select: {
+        id:   true,
+        slug: true,
+        user: { select: { name: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
-  // Payout totals summary
-  const summary = await prisma.payout.groupBy({
-    by:    ["status"],
-    _sum:  { netAmount: true },
-    _count:{ id: true },
-  });
-
-  return NextResponse.json({ payouts, total, page, perPage, summary });
+  return NextResponse.json({ payouts, total, page, perPage, summary, noPhoneModels });
 }
 
 // ── POST /api/admin/payouts — trigger manual payout ──────────────────────────
