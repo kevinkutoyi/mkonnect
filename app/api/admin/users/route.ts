@@ -64,9 +64,30 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id, role } = await req.json();
-  if (!id || !role) return NextResponse.json({ error: "id and role required" }, { status: 422 });
+  const body = await req.json();
+  const { id, role, password } = body;
 
-  await prisma.user.update({ where: { id }, data: { role } });
-  return NextResponse.json({ ok: true });
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 422 });
+
+  // ── Role change ────────────────────────────────────────────────────────────
+  if (role) {
+    if (!["VISITOR", "MASSEUSE", "ADMIN"].includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 422 });
+    }
+    await prisma.user.update({ where: { id }, data: { role } });
+    return NextResponse.json({ ok: true, updated: "role" });
+  }
+
+  // ── Password reset ─────────────────────────────────────────────────────────
+  if (password) {
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 422 });
+    }
+    const bcrypt = await import("bcryptjs");
+    const hash   = await bcrypt.hash(password, 12);
+    await prisma.user.update({ where: { id }, data: { password: hash } });
+    return NextResponse.json({ ok: true, updated: "password" });
+  }
+
+  return NextResponse.json({ error: "role or password required" }, { status: 422 });
 }
