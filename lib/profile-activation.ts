@@ -68,8 +68,10 @@ export async function syncProfileActivation(
   }
 
   const isAdminApproved   = profile.status === "APPROVED";
-  const hasActiveSub      = profile.subscriptions.length > 0;
-  const shouldBeActive    = isAdminApproved && hasActiveSub;
+  // Tiers disabled: approval alone is sufficient for listing.
+  // Re-enable the line below when paid tiers are re-introduced:
+  //   const shouldBeActive = isAdminApproved && profile.subscriptions.length > 0;
+  const shouldBeActive    = isAdminApproved;
   const alreadyCorrect    = profile.listingActive === shouldBeActive;
 
   if (!alreadyCorrect) {

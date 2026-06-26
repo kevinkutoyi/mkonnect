@@ -229,7 +229,7 @@ export default async function ModelProfilePage({ params }: Props) {
               : <><strong>Preview mode —</strong>{" "}
                   {profile.status !== "APPROVED"
                     ? "Awaiting admin approval."
-                    : <>Not publicly listed. <a href="/dashboard/listing" className="font-semibold underline">Activate a listing plan →</a></>}
+                    : "Awaiting activation — contact support if this persists."}
                 </>
             }
           </div>
