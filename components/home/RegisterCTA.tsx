@@ -57,26 +57,20 @@ export function RegisterCTA() {
 
           {/* Right card */}
           <div className="w-full max-w-xs shrink-0">
-            <div className="rounded-3xl bg-white/10 p-8 backdrop-blur ring-1 ring-white/20">
-              <p className="mb-1 text-xs font-bold uppercase tracking-widest opacity-70">Listing Plans</p>
-              <div className="mt-4 space-y-3">
-                {[
-                  { tier: "Regular", price: "Free", color: "bg-white/20" },
-                  { tier: "VIP",     price: "KES 1,500/mo", color: "bg-amber-400/30" },
-                  { tier: "Premium", price: "KES 3,500/mo", color: "bg-purple-400/30" },
-                  { tier: "VVIP",    price: "KES 6,000/mo", color: "bg-rose-400/30" },
-                ].map(({ tier, price, color }) => (
-                  <div
-                    key={tier}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm ${color}`}
-                  >
-                    <span className="font-semibold">{tier}</span>
-                    <span className="opacity-80">{price}</span>
-                  </div>
-                ))}
+            <div className="rounded-3xl bg-white/10 p-8 backdrop-blur ring-1 ring-white/20 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-3xl">
+                🎉
               </div>
-              <p className="mt-4 text-center text-xs opacity-60">
-                Upgrade anytime. Cancel anytime.
+              <p className="text-xl font-extrabold">Free to join</p>
+              <p className="mt-2 text-sm opacity-80 leading-relaxed">
+                We're onboarding models for free right now. Create your profile,
+                get discovered, and start earning — no listing fees.
+              </p>
+              <div className="mt-5 rounded-xl bg-white/20 px-4 py-3 text-sm font-semibold">
+                ✅ No credit card required
+              </div>
+              <p className="mt-4 text-xs opacity-60">
+                Premium listing plans coming soon.
               </p>
             </div>
           </div>

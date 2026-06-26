@@ -104,7 +104,7 @@ export default function RegisterPage() {
         {(["VISITOR", "MASSEUSE"] as const).map((r) => (
           <label
             key={r}
-            className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 p-4 text-center text-sm transition-colors ${
+            className={`relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 p-4 text-center text-sm transition-colors ${
               role === r
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/40"
@@ -116,6 +116,11 @@ export default function RegisterPage() {
             <span className="text-xs text-muted-foreground leading-tight">
               {r === "VISITOR" ? "Book massage sessions" : "Offer massage services"}
             </span>
+            {r === "MASSEUSE" && (
+              <span className="mt-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                FREE now
+              </span>
+            )}
           </label>
         ))}
       </div>
