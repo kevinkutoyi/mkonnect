@@ -128,19 +128,17 @@ export default async function ListingPage({
         reason={searchParams.reason}
       />
 
-      {/* No profile warning */}
-      {!profile && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-          ⚠ Complete your{" "}
-          <a href="/dashboard/onboarding" className="font-medium underline">
-            profile setup
-          </a>{" "}
-          before purchasing a listing plan.
-        </div>
-      )}
-
-      {/* Tier selector */}
-      <TierSelector tiers={tiers as any} activeSub={activeSubForSelector} />
+      {/* Listing plans temporarily disabled */}
+      <div className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-8 text-center dark:border-blue-800 dark:bg-blue-950/20">
+        <p className="text-2xl mb-2">🚀</p>
+        <h3 className="text-base font-semibold text-blue-900 dark:text-blue-200">
+          Listing plans coming soon
+        </h3>
+        <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
+          We are onboarding models for free right now. Paid listing plans will be
+          available shortly — you will be notified when they launch.
+        </p>
+      </div>
 
       {/* Payment history */}
       {history.length > 0 && (
