@@ -1,7 +1,7 @@
 "use client";
 // app/(admin)/admin/users/page.tsx
 import { useCallback, useEffect, useState } from "react";
-import { Search, Trash2, RefreshCw, Loader2, KeyRound, X, CheckCircle2 } from "lucide-react";
+import { Search, Trash2, RefreshCw, Loader2, X, CheckCircle2, Pencil } from "lucide-react";
 
 type Role = "VISITOR" | "MASSEUSE" | "ADMIN";
 
@@ -30,11 +30,12 @@ export default function AdminUsersPage() {
   const [confirm,    setConfirm]    = useState<string | null>(null);
   const [toast,      setToast]      = useState<{ msg: string; ok: boolean } | null>(null);
 
-  // Password modal
-  const [pwdModal,   setPwdModal]   = useState<User | null>(null);
-  const [newPwd,     setNewPwd]     = useState("");
-  const [pwdLoading, setPwdLoading] = useState(false);
-  const [pwdError,   setPwdError]   = useState<string | null>(null);
+
+  // Edit modal
+  const [editModal,   setEditModal]   = useState<User | null>(null);
+  const [editForm,    setEditForm]    = useState({ name: "", email: "", phone: "", role: "VISITOR" as Role, password: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError,   setEditError]   = useState<string | null>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -101,27 +102,48 @@ export default function AdminUsersPage() {
     }
   };
 
-  const savePassword = async () => {
-    if (!pwdModal) return;
-    if (newPwd.length < 8) { setPwdError("Minimum 8 characters"); return; }
-    setPwdLoading(true);
-    setPwdError(null);
+
+  const openEdit = (user: User) => {
+    setEditModal(user);
+    setEditForm({ name: user.name, email: user.email, phone: "", role: user.role, password: "" });
+    setEditError(null);
+    // Fetch current phone separately (not in list query)
+    fetch(`/api/admin/users/${user.id}`)
+      .then((r) => r.json())
+      .then((d) => setEditForm((f) => ({ ...f, phone: d.phone ?? "" })));
+  };
+
+  const saveEdit = async () => {
+    if (!editModal) return;
+    setEditLoading(true);
+    setEditError(null);
     try {
-      const res  = await fetch("/api/admin/users", {
+      const body: Record<string, any> = {
+        name:  editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        role:  editForm.role,
+      };
+      if (editForm.password) body.password = editForm.password;
+
+      const res  = await fetch(`/api/admin/users/${editModal.id}`, {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ id: pwdModal.id, password: newPwd }),
+        body:    JSON.stringify(body),
       });
       const json = await res.json();
-      if (res.ok) {
-        setPwdModal(null);
-        setNewPwd("");
-        showToast(`Password updated for ${pwdModal.name}`);
-      } else {
-        setPwdError(json.error ?? "Failed to update password");
-      }
+      if (!res.ok) { setEditError(json.error ?? "Update failed"); return; }
+
+      // Update local state
+      setUsers((prev) => prev.map((u) =>
+        u.id === editModal.id
+          ? { ...u, name: json.user.name, email: json.user.email, role: json.user.role }
+          : u
+      ));
+      setEditModal(null);
+      showToast(`${json.user.name} updated`);
     } finally {
-      setPwdLoading(false);
+      setEditLoading(false);
     }
   };
 
@@ -144,42 +166,93 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Password modal */}
-      {pwdModal && (
+
+      {/* Edit modal */}
+      {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border bg-background p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-                <h3 className="font-bold">Reset Password</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{pwdModal.name} · {pwdModal.email}</p>
+                <h3 className="font-bold text-lg">Edit User</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{editModal.email}</p>
               </div>
-              <button onClick={() => { setPwdModal(null); setNewPwd(""); setPwdError(null); }}
+              <button onClick={() => setEditModal(null)}
                 className="rounded-lg p-1.5 hover:bg-muted transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-4">
+              {/* Name */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground">New password</label>
+                <label className="text-xs font-medium text-muted-foreground">Full name</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border bg-muted/30 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Email address</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border bg-muted/30 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Phone number</label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="e.g. 0712345678"
+                  className="mt-1.5 w-full rounded-xl border bg-muted/30 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Role</label>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value as Role }))}
+                  className="mt-1.5 w-full rounded-xl border bg-muted/30 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              {/* New password (optional) */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  New password <span className="text-muted-foreground/60">(leave blank to keep current)</span>
+                </label>
                 <input
                   type="password"
-                  value={newPwd}
-                  onChange={(e) => setNewPwd(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && savePassword()}
+                  value={editForm.password}
+                  onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="Min 8 characters"
                   className="mt-1.5 w-full rounded-xl border bg-muted/30 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
-              {pwdError && (
-                <p className="text-xs text-destructive">{pwdError}</p>
+
+              {editError && (
+                <p className="rounded-xl bg-destructive/10 px-4 py-2.5 text-sm text-destructive">{editError}</p>
               )}
+
               <button
-                onClick={savePassword}
-                disabled={pwdLoading || newPwd.length < 8}
+                onClick={saveEdit}
+                disabled={editLoading}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
-                {pwdLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                {pwdLoading ? "Saving…" : "Set Password"}
+                {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {editLoading ? "Saving…" : "Save Changes"}
               </button>
             </div>
           </div>
@@ -283,11 +356,11 @@ export default function AdminUsersPage() {
                   ) : (
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => { setPwdModal(user); setNewPwd(""); setPwdError(null); }}
-                        title="Reset password"
+                        onClick={() => openEdit(user)}
+                        title="Edit user"
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                       >
-                        <KeyRound className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setConfirm(user.id)}
