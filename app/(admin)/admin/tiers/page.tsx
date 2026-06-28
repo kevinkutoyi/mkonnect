@@ -25,9 +25,10 @@ export default async function AdminTiersPage() {
     activeCountsByTier.map((r) => [r.tierId, r._count.tierId])
   );
 
+  // Match payments page: count ACTIVE + EXPIRED, exclude admin-granted free subs
   const revenueByTier = await prisma.profileSubscription.groupBy({
     by: ["tierId"],
-    where: { status: "ACTIVE" },
+    where: { status: { in: ["ACTIVE", "EXPIRED"] }, grantedByAdmin: false },
     _sum:  { amountPaid: true },
     _count:{ tierId: true },
   });
