@@ -1,66 +1,58 @@
 // app/(admin)/layout.tsx
-import { auth }     from "@/lib/auth";
-import { redirect } from "next/navigation";
-import Link         from "next/link";
-import {
-  LayoutDashboard, Users, ShieldCheck, CreditCard,
-  Star, Tag, MapPin, Banknote,
-} from "lucide-react";
-
-const NAV = [
-  { href: "/admin",           label: "Overview",    icon: LayoutDashboard },
-  { href: "/admin/masseuses", label: "Profiles",    icon: ShieldCheck     },
-  { href: "/admin/reviews",   label: "Reviews",     icon: Star            },
-  { href: "/admin/payments",  label: "Payments",    icon: CreditCard      },
-  { href: "/admin/payouts",   label: "Payouts",     icon: Banknote        },
-  { href: "/admin/users",     label: "Users",       icon: Users           },
-  { href: "/admin/tiers",     label: "Tiers",       icon: Tag             },
-];
+import { auth }        from "@/lib/auth";
+import { redirect }    from "next/navigation";
+import Link            from "next/link";
+import { prisma }      from "@/lib/prisma";
+import { MapPin, ExternalLink } from "lucide-react";
+import { SidebarNav }  from "@/components/admin/SidebarNav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") redirect("/");
 
+  // Badge counts — pending items that need attention
+  const [pendingProfiles, pendingReviews, pendingPayments] = await Promise.all([
+    prisma.masseuseProfile.count({ where: { status: "PENDING" } }),
+    prisma.review.count({ where: { status: "HIDDEN" } }),
+    prisma.profileSubscription.count({ where: { status: "PENDING" } }),
+  ]);
+
+  const badges: Record<string, number> = {
+    "/admin/masseuses": pendingProfiles,
+    "/admin/reviews":   pendingReviews,
+    "/admin/payments":  pendingPayments,
+  };
+
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen bg-muted/20">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-card lg:flex">
-        <div className="flex h-16 items-center gap-2 border-b px-5">
-          <MapPin className="h-4 w-4 text-primary" />
-          <span className="font-bold tracking-tight">modelsraha admin</span>
+      <aside className="hidden w-56 shrink-0 flex-col border-r bg-card lg:flex">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+            <MapPin className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <span className="text-sm font-bold tracking-tight">modelsraha</span>
+          <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            Admin
+          </span>
         </div>
-        <nav className="flex-1 space-y-0.5 p-3">
-          {NAV.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="border-t p-4">
-          <p className="text-xs text-muted-foreground">
-            Signed in as<br />
-            <span className="font-semibold text-foreground">{session.user.email}</span>
-          </p>
-        </div>
+        <SidebarNav email={session.user.email!} badges={badges} />
       </aside>
 
       {/* Main */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0">
         {/* Top bar */}
-        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-          <h1 className="font-semibold">Admin Panel</h1>
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">
-              ← View site
-            </Link>
-          </div>
+        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-6">
+          <p className="text-sm font-semibold text-muted-foreground">Admin Panel</p>
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            View site
+          </Link>
         </header>
-        <main className="flex-1 px-6 py-8">
+        <main className="flex-1 px-6 py-8 overflow-auto">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>
