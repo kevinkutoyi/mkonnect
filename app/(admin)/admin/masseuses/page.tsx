@@ -6,7 +6,7 @@ import Image from "next/image";
 import {
   Ban, RotateCcw, XCircle,
   MapPin, Calendar, Search, ExternalLink,
-  Loader2, CheckCircle2,
+  Loader2, CheckCircle2, Eye, EyeOff,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
@@ -120,10 +120,26 @@ function ProfileCard({
   onAction: (id: string, action: string, reason?: string) => void;
   acting: string | null;
 }) {
-  const [modal, setModal] = useState<"suspend" | "ban" | null>(null);
-  const photo = profile.photos?.[0];
+  const [modal,        setModal]        = useState<"suspend" | "ban" | null>(null);
+  const [listingActive, setListingActive] = useState<boolean>(profile.listingActive);
+  const [togglingList,  setTogglingList]  = useState(false);
+  const photo    = profile.photos?.[0];
   const status: Status = profile.status;
   const isActing = acting === profile.id;
+
+  async function toggleListing() {
+    setTogglingList(true);
+    try {
+      const res = await fetch(`/api/admin/profiles/${profile.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ listingActive: !listingActive }),
+      });
+      if (res.ok) setListingActive((v) => !v);
+    } finally {
+      setTogglingList(false);
+    }
+  }
 
   return (
     <>
@@ -147,9 +163,13 @@ function ProfileCard({
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[status]}`}>
                 {status}
               </span>
-              {profile.listingActive && (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              {listingActive ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                   Listed
+                </span>
+              ) : (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                  Unlisted
                 </span>
               )}
             </div>
@@ -203,6 +223,26 @@ function ProfileCard({
             </div>
           ) : (
             <>
+              {/* List / Unlist toggle — only for approved profiles */}
+              {status === "APPROVED" && (
+                <button
+                  onClick={toggleListing}
+                  disabled={togglingList}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold active:scale-95 transition-colors disabled:opacity-50 ${
+                    listingActive
+                      ? "border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800/40"
+                      : "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                  }`}
+                >
+                  {togglingList
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : listingActive
+                      ? <><EyeOff className="h-3.5 w-3.5" /> Unlist</>
+                      : <><Eye className="h-3.5 w-3.5" /> List</>
+                  }
+                </button>
+              )}
+
               {status !== "SUSPENDED" && status !== "BANNED" && (
                 <button
                   onClick={() => setModal("suspend")}
