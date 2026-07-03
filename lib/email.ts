@@ -56,46 +56,6 @@ function emailWrapper(content: string, unsubscribeToken?: string): string {
 </body>
 </html>`;
 }
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${APP_NAME}</title>
-</head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-    <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);">
-        <!-- Header -->
-        <tr>
-          <td style="background:#e11d48;padding:24px 32px;">
-            <span style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-              modelsraha
-            </span>
-          </td>
-        </tr>
-        <!-- Body -->
-        <tr>
-          <td style="padding:32px;">
-            ${content}
-          </td>
-        </tr>
-        <!-- Footer -->
-        <tr>
-          <td style="padding:16px 32px 24px;border-top:1px solid #f1f5f9;">
-            <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
-              © ${new Date().getFullYear()} ${APP_NAME} · Kenya's massage marketplace<br/>
-              If you didn't request this email, you can safely ignore it.
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-}
 
 // ─── Button component ─────────────────────────────────────────────────────────
 function emailButton(href: string, label: string): string {
