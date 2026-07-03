@@ -16,6 +16,7 @@ export const RegisterSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(["VISITOR", "MASSEUSE"]),
   agreeToTerms: z.boolean().refine((v) => v === true, "You must accept the terms"),
+  newsletterSubscribed: z.boolean().optional().default(true),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],

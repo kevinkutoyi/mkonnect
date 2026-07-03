@@ -7,8 +7,55 @@ const FROM = process.env.EMAIL_FROM ?? "noreply@modelsraha.com";
 const APP_URL = process.env.NEXTAUTH_URL ?? "https://modelsraha.com";
 const APP_NAME = "modelsraha";
 
+const UNSUBSCRIBE_URL = `${APP_URL}/api/newsletter/unsubscribe`;
+
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
-function emailWrapper(content: string): string {
+function emailWrapper(content: string, unsubscribeToken?: string): string {
+  const footer = unsubscribeToken
+    ? `© ${new Date().getFullYear()} ${APP_NAME} · Kenya's massage marketplace<br/>
+       <a href="${UNSUBSCRIBE_URL}?token=${unsubscribeToken}" style="color:#94a3b8;">Unsubscribe</a>`
+    : `© ${new Date().getFullYear()} ${APP_NAME} · Kenya's massage marketplace<br/>
+       If you didn't request this email, you can safely ignore it.`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${APP_NAME}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);">
+        <!-- Header -->
+        <tr>
+          <td style="background:#e11d48;padding:24px 32px;">
+            <span style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
+              modelsraha
+            </span>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px;">
+            ${content}
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 32px 24px;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+              ${footer}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -379,4 +426,46 @@ export async function sendListingRejectedEmail(params: {
     subject: `Important: ${headlines[params.action]}`,
     html,
   });
+}
+
+// =============================================================================
+// NEWSLETTER BROADCAST
+// =============================================================================
+
+export interface NewsletterRecipient {
+  email: string;
+  name:  string;
+  unsubscribeToken: string; // base64(userId)
+}
+
+/**
+ * Send a newsletter to a batch of recipients.
+ * Resend batch API allows up to 100 per call — callers should chunk accordingly.
+ * Returns { sent, failed } counts.
+ */
+export async function sendNewsletterBatch(params: {
+  recipients: NewsletterRecipient[];
+  subject:    string;
+  bodyHtml:   string; // admin-composed HTML body content (goes inside the wrapper)
+}): Promise<{ sent: number; failed: number }> {
+  const messages = params.recipients.map((r) => ({
+    from:    FROM,
+    to:      r.email,
+    subject: params.subject,
+    html:    emailWrapper(
+      `<p style="margin:0 0 4px;font-size:15px;color:#475569;">Hi <strong>${r.name}</strong>,</p>` +
+      params.bodyHtml,
+      r.unsubscribeToken
+    ),
+  }));
+
+  try {
+    const result = await (resend.batch as any).send(messages);
+    // Resend batch returns { data: [...] } — count successes
+    const data = result?.data ?? [];
+    const failed = data.filter((d: any) => d.error).length;
+    return { sent: data.length - failed, failed };
+  } catch {
+    return { sent: 0, failed: params.recipients.length };
+  }
 }

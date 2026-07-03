@@ -25,7 +25,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterInput>({
     resolver: zodResolver(RegisterSchema),
-    defaultValues: { role: "VISITOR" },
+    defaultValues: { role: "VISITOR", newsletterSubscribed: true },
   });
 
   const password = watch("password", "");
@@ -290,6 +290,15 @@ export default function RegisterPage() {
         {errors.agreeToTerms && (
           <p className="text-xs text-destructive">{errors.agreeToTerms.message}</p>
         )}
+
+        {/* Newsletter */}
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" {...register("newsletterSubscribed")} className="mt-0.5 rounded" />
+          <span className="text-muted-foreground leading-snug">
+            Subscribe to the modelsraha newsletter — tips, updates, and platform news.
+            You can unsubscribe anytime.
+          </span>
+        </label>
 
         <button
           type="submit"

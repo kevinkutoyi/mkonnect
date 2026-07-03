@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, password, role } = parsed.data;
+    const { name, email, password, role, newsletterSubscribed } = parsed.data;
 
     // Check duplicate email
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         email,
         password: hashedPassword,
         role: role as any,
+        newsletterSubscribed: newsletterSubscribed ?? true,
       },
       select: { id: true, name: true, email: true, role: true },
     });

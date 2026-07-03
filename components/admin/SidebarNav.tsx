@@ -3,17 +3,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, ShieldCheck, CreditCard,
-  Star, Tag, MapPin, Banknote,
+  Star, Tag, Banknote, Mail,
 } from "lucide-react";
 
 const NAV = [
-  { href: "/admin",           label: "Overview",  icon: LayoutDashboard },
-  { href: "/admin/masseuses", label: "Profiles",  icon: ShieldCheck     },
-  { href: "/admin/reviews",   label: "Reviews",   icon: Star            },
-  { href: "/admin/payments",  label: "Payments",  icon: CreditCard      },
-  { href: "/admin/payouts",   label: "Payouts",   icon: Banknote        },
-  { href: "/admin/users",     label: "Users",     icon: Users           },
-  { href: "/admin/tiers",     label: "Tiers",     icon: Tag             },
+  { href: "/admin",            label: "Overview",   icon: LayoutDashboard },
+  { href: "/admin/masseuses",  label: "Profiles",   icon: ShieldCheck     },
+  { href: "/admin/reviews",    label: "Reviews",    icon: Star            },
+  { href: "/admin/payments",   label: "Payments",   icon: CreditCard      },
+  { href: "/admin/payouts",    label: "Payouts",    icon: Banknote        },
+  { href: "/admin/users",      label: "Users",      icon: Users           },
+  { href: "/admin/tiers",      label: "Tiers",      icon: Tag             },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Mail            },
 ];
 
 interface Props {
