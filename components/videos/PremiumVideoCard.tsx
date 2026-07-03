@@ -2,7 +2,7 @@
 // components/videos/PremiumVideoCard.tsx
 
 import { useState } from "react";
-import { Lock, Play, Loader2, MapPin } from "lucide-react";
+import { Lock, Play, Loader2, MapPin, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getInitials } from "@/lib/utils";
 import Link from "next/link";
@@ -23,10 +23,11 @@ interface Props {
       city:     string | null;
     };
   };
-  isLoggedIn: boolean;
+  isLoggedIn:     boolean;
+  isAdminPreview?: boolean;
 }
 
-export function PremiumVideoCard({ video, isLoggedIn }: Props) {
+export function PremiumVideoCard({ video, isLoggedIn, isAdminPreview = false }: Props) {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -65,6 +66,11 @@ export function PremiumVideoCard({ video, isLoggedIn }: Props) {
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg">
                 <Play className="h-7 w-7 fill-primary text-primary ml-1" />
               </div>
+              {isAdminPreview && (
+                <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                  <ShieldCheck className="h-3 w-3" /> Admin preview
+                </div>
+              )}
             </button>
           )
         ) : (

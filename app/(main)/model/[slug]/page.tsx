@@ -319,10 +319,12 @@ export default async function ModelProfilePage({ params }: Props) {
                   <h2 className="mb-4 text-xl font-bold">Premium Videos</h2>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {profile.premiumVideos.map((v) => {
-                      const isUnlocked = unlockedVideoIds.has(v.id);
+                      const isPaid     = unlockedVideoIds.has(v.id);
+                      const isUnlocked = isAdmin || isPaid;
                       return (
                         <PremiumVideoCard
                           key={v.id}
+                          isAdminPreview={isAdmin && !isPaid}
                           video={{
                             id:          v.id,
                             title:       v.title,

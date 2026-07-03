@@ -18,6 +18,7 @@ export default async function VideosPage({
 }) {
   const session = await auth();
   const userId  = session?.user?.id ?? null;
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const videos = await prisma.premiumVideo.findMany({
     where: {
@@ -49,21 +50,26 @@ export default async function VideosPage({
     unlocks.forEach((u) => unlockedIds.add(u.videoId));
   }
 
-  const serialized = videos.map((v) => ({
-    id:          v.id,
-    title:       v.title,
-    description: v.description,
-    price:       100,
-    unlockCount: v._count.unlocks,
-    isUnlocked:  unlockedIds.has(v.id),
-    videoUrl:    unlockedIds.has(v.id) ? v.videoUrl : null,
-    profile: {
-      slug:     v.profile.slug,
-      name:     v.profile.user.name,
-      avatarUrl: v.profile.avatarUrl,
-      city:     v.profile.city?.name ?? null,
-    },
-  }));
+  const serialized = videos.map((v) => {
+    const isPaid     = unlockedIds.has(v.id);
+    const isUnlocked = isAdmin || isPaid;
+    return {
+      id:          v.id,
+      title:       v.title,
+      description: v.description,
+      price:       100,
+      unlockCount: v._count.unlocks,
+      isUnlocked,
+      videoUrl:    isUnlocked ? v.videoUrl : null,
+      isAdminPreview: isAdmin && !isPaid,
+      profile: {
+        slug:     v.profile.slug,
+        name:     v.profile.user.name,
+        avatarUrl: v.profile.avatarUrl,
+        city:     v.profile.city?.name ?? null,
+      },
+    };
+  });
 
   const justUnlocked = searchParams.status === "success" && searchParams.videoId
     ? serialized.find((v) => v.id === searchParams.videoId)
@@ -107,11 +113,12 @@ export default async function VideosPage({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {serialized.map((video) => (
+          {serialized.map(({ isAdminPreview, ...video }) => (
             <PremiumVideoCard
               key={video.id}
               video={video}
               isLoggedIn={!!session}
+              isAdminPreview={isAdminPreview}
             />
           ))}
         </div>
