@@ -420,12 +420,17 @@ export async function sendNewsletterBatch(params: {
   }));
 
   try {
-    const result = await (resend.batch as any).send(messages);
-    // Resend batch returns { data: [...] } — count successes
-    const data = result?.data ?? [];
-    const failed = data.filter((d: any) => d.error).length;
-    return { sent: data.length - failed, failed };
-  } catch {
+    // resend.batch.send() returns { data: { data: [{id}...] } | null, error: ... }
+    const result = await resend.batch.send(messages);
+    if (result.error || !result.data) {
+      console.error("[Newsletter] Resend batch error:", result.error);
+      return { sent: 0, failed: params.recipients.length };
+    }
+    // result.data.data is the array of sent email objects [{id: string}, ...]
+    const sent = result.data.data.length;
+    return { sent, failed: params.recipients.length - sent };
+  } catch (err) {
+    console.error("[Newsletter] Batch send threw:", err);
     return { sent: 0, failed: params.recipients.length };
   }
 }
