@@ -1,14 +1,16 @@
 "use client";
 // app/(admin)/admin/newsletter/page.tsx
-// Admin tool: compose and broadcast a newsletter email to all subscribed users.
 
 import { useState, useEffect } from "react";
 import {
   Mail, Send, Users, CheckCircle2, XCircle,
-  Loader2, Eye, EyeOff, AlertTriangle,
+  Loader2, Eye, EyeOff, AlertTriangle, UserCheck, ShoppingBag,
 } from "lucide-react";
 
-// Minimal sanitiser — convert plain newlines to <br> and <p> tags for the email body
+type Audience = "ALL" | "MODELS" | "CLIENTS";
+
+interface Counts { all: number; models: number; clients: number }
+
 function plainToHtml(text: string): string {
   return text
     .split(/\n\n+/)
@@ -18,23 +20,48 @@ function plainToHtml(text: string): string {
     .join("");
 }
 
-export default function AdminNewsletterPage() {
-  const [subject,       setSubject]       = useState("");
-  const [body,          setBody]          = useState("");
-  const [preview,       setPreview]       = useState(false);
-  const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
-  const [sending,       setSending]       = useState(false);
-  const [result,        setResult]        = useState<{ sent: number; failed: number; total: number } | null>(null);
-  const [error,         setError]         = useState<string | null>(null);
-  const [confirmed,     setConfirmed]     = useState(false);
+const AUDIENCES: { key: Audience; label: string; icon: React.ReactNode; desc: string }[] = [
+  {
+    key:   "ALL",
+    label: "All Users",
+    icon:  <Users className="h-4 w-4" />,
+    desc:  "Every subscribed user — models and clients",
+  },
+  {
+    key:   "MODELS",
+    label: "Models only",
+    icon:  <UserCheck className="h-4 w-4" />,
+    desc:  "Only masseuse profiles",
+  },
+  {
+    key:   "CLIENTS",
+    label: "Clients only",
+    icon:  <ShoppingBag className="h-4 w-4" />,
+    desc:  "Visitors and booked clients",
+  },
+];
 
-  // Load subscriber count on mount
+export default function AdminNewsletterPage() {
+  const [audience,  setAudience]  = useState<Audience>("ALL");
+  const [subject,   setSubject]   = useState("");
+  const [body,      setBody]      = useState("");
+  const [preview,   setPreview]   = useState(false);
+  const [counts,    setCounts]    = useState<Counts | null>(null);
+  const [sending,   setSending]   = useState(false);
+  const [result,    setResult]    = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [error,     setError]     = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/newsletter")
       .then((r) => r.json())
-      .then((d) => setSubscriberCount(d.count ?? 0))
-      .catch(() => setSubscriberCount(0));
+      .then((d) => setCounts(d))
+      .catch(() => setCounts({ all: 0, models: 0, clients: 0 }));
   }, []);
+
+  const recipientCount = counts
+    ? audience === "ALL" ? counts.all : audience === "MODELS" ? counts.models : counts.clients
+    : null;
 
   async function handleSend() {
     if (!subject.trim() || !body.trim()) {
@@ -45,10 +72,10 @@ export default function AdminNewsletterPage() {
     setSending(true);
     setResult(null);
     try {
-      const res  = await fetch("/api/admin/newsletter", {
+      const res = await fetch("/api/admin/newsletter", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ subject: subject.trim(), bodyHtml: plainToHtml(body) }),
+        body:    JSON.stringify({ subject: subject.trim(), bodyHtml: plainToHtml(body), audience }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -58,8 +85,7 @@ export default function AdminNewsletterPage() {
         setSubject("");
         setBody("");
         setConfirmed(false);
-        // Refresh count
-        fetch("/api/admin/newsletter").then((r) => r.json()).then((d) => setSubscriberCount(d.count ?? 0));
+        fetch("/api/admin/newsletter").then((r) => r.json()).then((d) => setCounts(d));
       }
     } catch {
       setError("Network error — please try again.");
@@ -73,20 +99,41 @@ export default function AdminNewsletterPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Newsletter</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Compose and broadcast an email to all subscribed users
-          </p>
-        </div>
-        <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-2.5">
-          <Users className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">
-            {subscriberCount === null ? "…" : subscriberCount.toLocaleString()}
-          </span>
-          <span className="text-xs text-muted-foreground">subscribers</span>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Newsletter</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Compose and broadcast an email to a specific audience
+        </p>
+      </div>
+
+      {/* Audience selector */}
+      <div className="grid grid-cols-3 gap-3">
+        {AUDIENCES.map(({ key, label, icon, desc }) => {
+          const count = counts
+            ? key === "ALL" ? counts.all : key === "MODELS" ? counts.models : counts.clients
+            : null;
+          const active = audience === key;
+          return (
+            <button
+              key={key}
+              onClick={() => { setAudience(key); setConfirmed(false); setResult(null); }}
+              className={`flex flex-col gap-1.5 rounded-2xl border p-4 text-left transition-all ${
+                active
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                  : "bg-card hover:border-primary/40"
+              }`}
+            >
+              <div className={`flex items-center gap-2 font-semibold text-sm ${active ? "text-primary" : ""}`}>
+                {icon} {label}
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
+              <p className={`text-lg font-bold mt-1 ${active ? "text-primary" : ""}`}>
+                {count === null ? "…" : count.toLocaleString()}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">subscribers</span>
+              </p>
+            </button>
+          );
+        })}
       </div>
 
       {/* Success result */}
@@ -94,13 +141,11 @@ export default function AdminNewsletterPage() {
         <div className="flex items-start gap-3 rounded-2xl border border-green-300 bg-green-50 px-5 py-4 dark:border-green-700 dark:bg-green-950/20">
           <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0 dark:text-green-400" />
           <div>
-            <p className="font-semibold text-green-800 dark:text-green-300">
-              Broadcast sent!
-            </p>
+            <p className="font-semibold text-green-800 dark:text-green-300">Broadcast sent!</p>
             <p className="mt-0.5 text-sm text-green-700 dark:text-green-400">
               {result.sent.toLocaleString()} emails delivered
               {result.failed > 0 && `, ${result.failed} failed`}
-              {" "}out of {result.total.toLocaleString()} subscribers.
+              {" "}out of {result.total.toLocaleString()} recipients.
             </p>
           </div>
         </div>
@@ -108,7 +153,7 @@ export default function AdminNewsletterPage() {
 
       {/* Compose card */}
       <div className="rounded-2xl border bg-card">
-        {/* Tabs: compose / preview */}
+        {/* Tabs */}
         <div className="flex border-b">
           <button
             onClick={() => setPreview(false)}
@@ -170,7 +215,9 @@ export default function AdminNewsletterPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    This will email {subscriberCount === null ? "all" : subscriberCount?.toLocaleString()} subscribers
+                    This will email{" "}
+                    {recipientCount === null ? "…" : recipientCount.toLocaleString()}{" "}
+                    {audience === "ALL" ? "subscribers" : audience === "MODELS" ? "models" : "clients"}
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300 cursor-pointer">
@@ -191,28 +238,29 @@ export default function AdminNewsletterPage() {
               >
                 {sending
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
-                  : <><Send className="h-4 w-4" /> Send newsletter</>
+                  : <><Send className="h-4 w-4" /> Send to {AUDIENCES.find(a => a.key === audience)?.label}</>
                 }
               </button>
             </div>
           ) : (
-            /* Email preview */
             <div>
               <p className="mb-3 text-xs text-muted-foreground">
                 This is how the email will look to recipients. "Hi [Name]" is prepended automatically.
               </p>
               <div className="overflow-hidden rounded-xl border">
-                {/* Fake email header */}
                 <div className="border-b bg-muted/30 px-4 py-3">
                   <p className="text-xs text-muted-foreground">
                     <span className="font-medium">From:</span> modelsraha &lt;noreply@modelsraha.com&gt;
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">To:</span>{" "}
+                    {AUDIENCES.find(a => a.key === audience)?.label} ({recipientCount === null ? "…" : recipientCount?.toLocaleString()} recipients)
                   </p>
                   <p className="text-xs text-muted-foreground">
                     <span className="font-medium">Subject:</span>{" "}
                     {subject || <em className="opacity-50">No subject</em>}
                   </p>
                 </div>
-                {/* Email body preview */}
                 <div className="bg-[#f4f4f5] px-4 py-6">
                   <div className="mx-auto max-w-[560px] overflow-hidden rounded-xl bg-white shadow-sm">
                     <div className="bg-[#e11d48] px-8 py-5">
@@ -245,11 +293,11 @@ export default function AdminNewsletterPage() {
         </div>
       </div>
 
-      {/* Info box */}
+      {/* Info */}
       <div className="rounded-2xl border bg-card px-5 py-4 text-sm text-muted-foreground space-y-1.5">
         <p className="font-semibold text-foreground">How it works</p>
-        <p>Emails are sent to all users with <strong>Newsletter subscribed</strong> set to on. New users opt in by default on signup. Users can unsubscribe via the link in every email footer.</p>
-        <p>Batching: emails are sent in groups of 100 via Resend. Large lists may take a minute to complete.</p>
+        <p>Only users with <strong>Newsletter subscribed</strong> on receive emails. New users opt in by default. Users can unsubscribe via the link in every email footer.</p>
+        <p>Emails are sent in batches of 100 via Resend. Large lists may take a moment to complete.</p>
       </div>
     </div>
   );

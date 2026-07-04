@@ -106,7 +106,7 @@ export function VideoManager({ initial }: Props) {
       <div className="rounded-2xl border bg-card p-6">
         <h2 className="mb-1 font-semibold">Add Premium Video</h2>
         <p className="mb-5 text-sm text-muted-foreground">
-          Clients pay <strong>KSH 100</strong> to unlock each video. Max 25MB, 3–4 minutes.
+          Clients pay <strong>KSH 100</strong> to unlock each video. MP4 or MOV · Max 25MB.
         </p>
 
         {error && (
@@ -154,13 +154,13 @@ export function VideoManager({ initial }: Props) {
               ) : (
                 <><Video className="h-8 w-8 text-muted-foreground" />
                 <p className="text-sm font-medium">Click to upload video</p>
-                <p className="text-xs text-muted-foreground">MP4 recommended · Max 25MB</p></>
+                <p className="text-xs text-muted-foreground">MP4 or MOV · Max 25MB</p></>
               )}
             </div>
             <input
               ref={fileRef}
               type="file"
-              accept="video/*"
+              accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
               className="hidden"
               onChange={handleFileChange}
             />
