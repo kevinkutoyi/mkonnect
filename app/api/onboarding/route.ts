@@ -102,6 +102,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Sync avatarUrl → ProfilePhoto (isCover) so search/admin pages show the photo
+    if (d.avatarUrl) {
+      const existingCover = await prisma.profilePhoto.findFirst({
+        where: { profileId: profile.id, isCover: true },
+      });
+      if (existingCover) {
+        await prisma.profilePhoto.update({
+          where: { id: existingCover.id },
+          data:  { url: d.avatarUrl, isAvatar: true },
+        });
+      } else {
+        await prisma.profilePhoto.create({
+          data: {
+            profileId: profile.id,
+            url:       d.avatarUrl,
+            isCover:   true,
+            isAvatar:  true,
+            altText:   d.fullName,
+          },
+        });
+      }
+    }
+
     return NextResponse.json(
       { message: "Profile saved.", slug: profile.slug },
       { status: 201 }
